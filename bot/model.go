@@ -9,7 +9,7 @@ const DefaultPrefix = "b!"
 type Server struct {
 	ID       string
 	Prefix   string
-	Playing  bool
+	Play     bool
 	Channels []string
 	Admins   []string
 	Users    map[string][]int

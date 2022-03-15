@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/asdine/storm/v3"
+	"github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
+	embed "github.com/clinet/discordgo-embed"
 	LR "github.com/sirupsen/logrus"
 )
 
@@ -32,6 +34,8 @@ var Commands = []Command{
 	{"rmvadmin", RemoveAdmin},
 	{"admins", Admins},
 	{"chanlist", Channels},
+	{"play", Play},
+	{"info", Info},
 }
 
 func New(log LR.Logger) (*Bot, error) {
@@ -118,6 +122,10 @@ func SetPrefix(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		}
 
 		serv := b.GetServer(m.GuildID)
+		if !serv.IsAdmin(m.Author.ID) {
+			return
+		}
+
 		channel := m.ChannelID
 
 		payload, ok := b.triggered(s, m, serv.Prefix, cmd)
@@ -129,6 +137,7 @@ func SetPrefix(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		if len(payload) == 0 {
 			msg := fmt.Sprintf("usage: `%s%s <prefix>`", serv.Prefix, cmd)
 			s.ChannelMessageSend(channel, msg)
+			return
 		}
 
 		serv.Prefix = payload[0]
@@ -146,6 +155,10 @@ func Prefix(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		}
 
 		serv := b.GetServer(m.GuildID)
+		if !serv.IsAdmin(m.Author.ID) {
+			return
+		}
+
 		channel := m.ChannelID
 
 		_, ok := b.triggered(s, m, serv.Prefix, cmd)
@@ -156,5 +169,106 @@ func Prefix(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 
 		msg := fmt.Sprintf("Bot prefix for this server is `%s`", serv.Prefix)
 		s.ChannelMessageSend(channel, msg)
+	}
+}
+
+func Play(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
+	return func(s *DG.Session, m *DG.MessageCreate) {
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
+
+		serv := b.GetServer(m.GuildID)
+		if !serv.IsAdmin(m.Author.ID) {
+			return
+		}
+
+		channel := m.ChannelID
+
+		payload, ok := b.triggered(s, m, serv.Prefix, cmd)
+		if !ok {
+			return
+		}
+		b.Info("command %s triggered", cmd)
+
+		if len(payload) == 0 {
+			msg := fmt.Sprintf("usage: `%s%s <on|off>`", serv.Prefix, cmd)
+			s.ChannelMessageSend(channel, msg)
+			return
+		}
+		arg := strings.ToLower(payload[0])
+		if arg != "on" && arg != "off" {
+			msg := fmt.Sprintf("usage: `%s%s <on|off>`", serv.Prefix, cmd)
+			s.ChannelMessageSend(channel, msg)
+			return
+		}
+
+		serv.Play = arg == "on"
+		b.SaveServer(serv)
+
+		status := "off"
+		if serv.Play {
+			status = "on"
+		}
+
+		msg := fmt.Sprintf("Play status set to `%s`", status)
+		s.ChannelMessageSend(channel, msg)
+	}
+}
+
+func Info(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
+	return func(s *DG.Session, m *DG.MessageCreate) {
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
+
+		serv := b.GetServer(m.GuildID)
+		if !serv.IsAdmin(m.Author.ID) {
+			return
+		}
+
+		channel := m.ChannelID
+
+		_, ok := b.triggered(s, m, serv.Prefix, cmd)
+		if !ok {
+			return
+		}
+		b.Info("command %s triggered", cmd)
+
+		// Create new embed message
+		msg := embed.NewEmbed().SetTitle("Server info").SetColor(0xaaddee)
+
+		// Show play status
+		status := "off"
+		if serv.Play {
+			status = "on"
+		}
+		msg.AddField("Play status", fmt.Sprintf("`%s`", status))
+
+		// Show configured prefix
+		msg.AddField("Prefix", fmt.Sprintf("`%s`", serv.Prefix))
+
+		// Show the configured list of admins
+		userTags := []string{}
+		for _, uid := range serv.Admins {
+			userTags = append(userTags, util.BuildUserTag(uid))
+		}
+		admins := "None"
+		if len(serv.Admins) != 0 {
+			admins = strings.Join(userTags, ", ")
+		}
+		msg.AddField("Admins", admins)
+
+		// Show the configured list of spawn channels
+		channelTags := []string{}
+		for _, cid := range serv.Channels {
+			channelTags = append(channelTags, util.BuildChannelTag(cid))
+		}
+		channels := "None"
+		if len(serv.Channels) != 0 {
+			channels = strings.Join(channelTags, ", ")
+		}
+		msg.AddField("Channels", channels)
+		s.ChannelMessageSendEmbed(channel, msg.MessageEmbed)
 	}
 }
