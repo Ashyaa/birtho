@@ -11,7 +11,7 @@ import (
 
 func main() {
 	logger := log.New()
-	err := bot.New(logger)
+	b, err := bot.New(logger)
 	if err != nil {
 		return
 	}
@@ -21,4 +21,5 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
+	b.Stop()
 }
