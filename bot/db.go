@@ -24,7 +24,7 @@ func (b *Bot) NewServer(id string) Server {
 		ID:       id,
 		Prefix:   DefaultPrefix,
 		Channels: make([]string, 0),
-		Users:    make(map[string]int),
+		Users:    make(map[string][]int),
 	}
 	b.db.Save(&serv)
 	return serv
