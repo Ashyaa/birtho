@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ashyaa/birtho/util"
+	U "github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
 )
 
@@ -32,14 +32,14 @@ func RemoveChannel(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			return
 		}
 
-		targetChannel, ok := util.StripChannelTag(payload[0])
-		if !ok || !util.IsValidChannel(s, m.GuildID, targetChannel) {
+		targetChannel, ok := U.StripChannelTag(payload[0])
+		if !ok || !U.IsValidChannel(s, m.GuildID, targetChannel) {
 			msg := fmt.Sprintf("Channel `%s` is not a valid channel", payload[0])
 			s.ChannelMessageSend(channel, msg)
 			return
 		}
 
-		serv.Channels = util.Remove(serv.Channels, targetChannel)
+		serv.Channels = U.Remove(serv.Channels, targetChannel)
 		b.SaveServer(serv)
 
 		msg := fmt.Sprintf("Removed channel %s from the list of spawn channels!", payload[0])
@@ -71,14 +71,14 @@ func AddChannel(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			return
 		}
 
-		targetChannel, ok := util.StripChannelTag(payload[0])
-		if !ok || !util.IsValidChannel(s, m.GuildID, targetChannel) {
+		targetChannel, ok := U.StripChannelTag(payload[0])
+		if !ok || !U.IsValidChannel(s, m.GuildID, targetChannel) {
 			msg := fmt.Sprintf("Channel `%s` is not a valid channel", payload[0])
 			s.ChannelMessageSend(channel, msg)
 			return
 		}
 
-		serv.Channels = util.AppendUnique(serv.Channels, targetChannel)
+		serv.Channels = U.AppendUnique(serv.Channels, targetChannel)
 		b.SaveServer(serv)
 
 		msg := fmt.Sprintf("Added channel %s to the list of spawn channels!", payload[0])
@@ -112,7 +112,7 @@ func Channels(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 
 		channelTags := []string{}
 		for _, cid := range serv.Channels {
-			channelTags = append(channelTags, util.BuildChannelTag(cid))
+			channelTags = append(channelTags, U.BuildChannelTag(cid))
 		}
 
 		msg := fmt.Sprintf("List of spawn channels: %s", strings.Join(channelTags, ", "))

@@ -4,39 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/asdine/storm/v3"
-	"github.com/ashyaa/birtho/util"
+	U "github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
 	embed "github.com/clinet/discordgo-embed"
 	LR "github.com/sirupsen/logrus"
 )
-
-type Bot struct {
-	dg  *DG.Session
-	db  *storm.DB
-	Log LR.Logger
-	tag string
-}
-
-type HandlerConstructor func(*Bot, string) func(*DG.Session, *DG.MessageCreate)
-
-type Command struct {
-	Name        string
-	Constructor HandlerConstructor
-}
-
-var Commands = []Command{
-	{"prefix", Prefix},
-	{"setprefix", SetPrefix},
-	{"addchan", AddChannel},
-	{"rmvchan", RemoveChannel},
-	{"addadmin", AddAdmin},
-	{"rmvadmin", RemoveAdmin},
-	{"admins", Admins},
-	{"chanlist", Channels},
-	{"play", Play},
-	{"info", Info},
-}
 
 func New(log LR.Logger) (*Bot, error) {
 	conf, err := ReadConfig()
@@ -172,50 +144,6 @@ func Prefix(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	}
 }
 
-func Play(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
-	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
-			return
-		}
-
-		serv := b.GetServer(m.GuildID)
-		if !serv.IsAdmin(m.Author.ID) {
-			return
-		}
-
-		channel := m.ChannelID
-
-		payload, ok := b.triggered(s, m, serv.Prefix, cmd)
-		if !ok {
-			return
-		}
-		b.Info("command %s triggered", cmd)
-
-		if len(payload) == 0 {
-			msg := fmt.Sprintf("usage: `%s%s <on|off>`", serv.Prefix, cmd)
-			s.ChannelMessageSend(channel, msg)
-			return
-		}
-		arg := strings.ToLower(payload[0])
-		if arg != "on" && arg != "off" {
-			msg := fmt.Sprintf("usage: `%s%s <on|off>`", serv.Prefix, cmd)
-			s.ChannelMessageSend(channel, msg)
-			return
-		}
-
-		serv.Play = arg == "on"
-		b.SaveServer(serv)
-
-		status := "off"
-		if serv.Play {
-			status = "on"
-		}
-
-		msg := fmt.Sprintf("Play status set to `%s`", status)
-		s.ChannelMessageSend(channel, msg)
-	}
-}
-
 func Info(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
 		if m.Author.ID == s.State.User.ID {
@@ -240,7 +168,7 @@ func Info(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 
 		// Show play status
 		status := "off"
-		if serv.Play {
+		if serv.G.On {
 			status = "on"
 		}
 		msg.AddField("Play status", fmt.Sprintf("`%s`", status))
@@ -251,7 +179,7 @@ func Info(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		// Show the configured list of admins
 		userTags := []string{}
 		for _, uid := range serv.Admins {
-			userTags = append(userTags, util.BuildUserTag(uid))
+			userTags = append(userTags, U.BuildUserTag(uid))
 		}
 		admins := "None"
 		if len(serv.Admins) != 0 {
@@ -262,7 +190,7 @@ func Info(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		// Show the configured list of spawn channels
 		channelTags := []string{}
 		for _, cid := range serv.Channels {
-			channelTags = append(channelTags, util.BuildChannelTag(cid))
+			channelTags = append(channelTags, U.BuildChannelTag(cid))
 		}
 		channels := "None"
 		if len(serv.Channels) != 0 {

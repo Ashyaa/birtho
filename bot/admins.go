@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ashyaa/birtho/util"
+	U "github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
 )
 
@@ -32,14 +32,14 @@ func RemoveAdmin(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			return
 		}
 
-		user, ok := util.StripUserTag(payload[0])
+		user, ok := U.StripUserTag(payload[0])
 		if !ok {
 			msg := fmt.Sprintf("User `%s` is not a valid user", payload[0])
 			s.ChannelMessageSend(channel, msg)
 			return
 		}
 
-		serv.Admins = util.Remove(serv.Admins, user)
+		serv.Admins = U.Remove(serv.Admins, user)
 		b.SaveServer(serv)
 
 		msg := fmt.Sprintf("Removed user %s from the list of bot admins!", payload[0])
@@ -71,14 +71,14 @@ func AddAdmin(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			return
 		}
 
-		user, ok := util.StripUserTag(payload[0])
-		if !ok || !util.IsUserInServer(s, m.GuildID, user) {
+		user, ok := U.StripUserTag(payload[0])
+		if !ok || !U.IsUserInServer(s, m.GuildID, user) {
 			msg := fmt.Sprintf("User `%s` is not a valid user", payload[0])
 			s.ChannelMessageSend(channel, msg)
 			return
 		}
 
-		serv.Admins = util.AppendUnique(serv.Admins, user)
+		serv.Admins = U.AppendUnique(serv.Admins, user)
 		b.SaveServer(serv)
 
 		msg := fmt.Sprintf("Added user %s to the list of bot admins!", payload[0])
@@ -112,7 +112,7 @@ func Admins(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 
 		userTags := []string{}
 		for _, uid := range serv.Admins {
-			userTags = append(userTags, util.BuildUserTag(uid))
+			userTags = append(userTags, U.BuildUserTag(uid))
 		}
 
 		msg := fmt.Sprintf("List of bot admins: %s", strings.Join(userTags, ", "))
