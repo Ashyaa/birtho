@@ -18,7 +18,7 @@ func (b *Bot) GetServer(id string) Server {
 	}
 	// Safety checks
 	if res.G.Items == nil {
-		res.G.Items = make(map[string]Item)
+		res.G.Items = make(map[string]ItemSpawn)
 	}
 	if res.Users == nil {
 		res.Users = make(map[string][]string)
@@ -31,7 +31,7 @@ func (b *Bot) NewServer(id string) Server {
 		ID:     id,
 		Prefix: DefaultPrefix,
 		G: Game{
-			Items: make(map[string]Item),
+			Items: make(map[string]ItemSpawn),
 		},
 		Channels: make([]string, 0),
 		Admins:   make([]string, 0),

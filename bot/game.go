@@ -9,11 +9,18 @@ import (
 
 	U "github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
+	embed "github.com/clinet/discordgo-embed"
 )
+
+func (b *Bot) RandomItem() Item {
+	index := rand.Intn(len(b.ItemIds))
+	key := b.ItemIds[index]
+	return b.Items[key]
+}
 
 func Play(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
+		if m.Author.ID == b.UserID {
 			return
 		}
 
@@ -42,6 +49,7 @@ func Play(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			return
 		}
 
+		serv.Cooldown()
 		serv.G.On = arg == "on"
 		b.SaveServer(serv)
 
@@ -57,36 +65,36 @@ func Play(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 
 func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
+		if m.Author.ID == b.UserID {
 			return
 		}
 
 		serv := b.GetServer(m.GuildID)
-		if !serv.IsAdmin(m.Author.ID) {
-			return
-		}
+		_, ok := b.triggered(s, m, serv.Prefix, cmd)
+		isManualCommand := serv.IsAdmin(m.Author.ID) && ok
 
 		channel := m.ChannelID
-		if !U.Contains(serv.Channels, channel) {
-			return
-		}
-
-		_, ok := b.triggered(s, m, serv.Prefix, cmd)
-		if !ok {
+		if !serv.CanSpawn(channel) && !isManualCommand {
 			return
 		}
 		b.Info("command %s triggered", cmd)
 
-		spawn := Item{ID: strconv.Itoa(rand.Intn(100))}
+		item := b.RandomItem()
+		spawn := ItemSpawn{
+			ID: strconv.Itoa(item.ID),
+		}
 
-		text := fmt.Sprintf("Spawn ID: `%s`", spawn.ID)
-		msg, err := s.ChannelMessageSend(channel, text)
+		msg, err := s.ChannelMessageSendEmbed(channel, embed.NewEmbed().
+			SetDescription(fmt.Sprintf("`%s` appeared!", item.Name)).
+			SetColor(0x00FF00).
+			SetImage(item.URL).MessageEmbed)
 		if err != nil {
 			b.ErrorE(err, "spawn message")
 			return
 		}
 		spawn.Message = msg.ID
 		serv.G.Items[channel] = spawn
+		serv.Cooldown()
 		b.SaveServer(serv)
 
 		time.AfterFunc(5*time.Second, func() {
@@ -98,7 +106,10 @@ func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			delete(curServ.G.Items, channel)
 			b.SaveServer(curServ)
 
-			s.ChannelMessageEdit(channel, msg.ID, "It's dead Jim")
+			edit := DG.NewMessageEdit(channel, msg.ID).SetEmbed(embed.NewEmbed().
+				SetDescription(fmt.Sprintf("`%s` left...", item.Name)).
+				SetColor(0xFF0000).MessageEmbed)
+			s.ChannelMessageEditComplex(edit)
 		})
 	}
 }
@@ -106,7 +117,7 @@ func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
 		user := m.Author.ID
-		if user == s.State.User.ID {
+		if user == b.UserID {
 			return
 		}
 
@@ -127,8 +138,12 @@ func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		}
 		b.Info("command %s triggered", cmd)
 
-		text := fmt.Sprintf("%s grabbed item `%s`", U.BuildUserTag(user), spawn.ID)
-		s.ChannelMessageEdit(channel, spawn.Message, text)
+		item := b.Items[spawn.ID]
+		text := fmt.Sprintf("%s grabbed `%s`!", U.BuildUserTag(user), item.Name)
+		s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
+			SetDescription(text).
+			SetColor(0xFFFFFF).
+			SetImage(item.URL).MessageEmbed)
 
 		_, ok = serv.Users[user]
 		if !ok {

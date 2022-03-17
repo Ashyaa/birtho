@@ -1,6 +1,9 @@
 package bot
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/asdine/storm/v3"
 	U "github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
@@ -9,15 +12,16 @@ import (
 
 const DefaultPrefix = "b!"
 
-type Item struct {
+type ItemSpawn struct {
 	ID      string
 	Message string
 }
 
 type Game struct {
 	On        bool
-	Items     map[string]Item
+	Items     map[string]ItemSpawn
 	messageID string
+	NextSpawn time.Time
 }
 
 type Server struct {
@@ -29,6 +33,18 @@ type Server struct {
 	Users    map[string][]string
 }
 
+// CanSpawn returns true only if an item can spawn in the given channel
+func (s Server) CanSpawn(cid string) bool {
+	delayOk := time.Now().Local().After(s.G.NextSpawn)
+	return s.G.On && delayOk && U.Contains(s.Channels, cid)
+}
+
+// Cooldown sets the server game on cooldown
+func (s *Server) Cooldown() {
+	s.G.NextSpawn = time.Now().Local().Add(2 * time.Minute)                        // Base cooldown of 2mn
+	s.G.NextSpawn = s.G.NextSpawn.Add(time.Duration(rand.Intn(780)) * time.Second) // variable cooldown, up to 15mn total
+}
+
 func (s Server) IsAdmin(uid string) bool {
 	// Everyone is an admin when no admins are registered
 	if len(s.Admins) == 0 {
@@ -38,10 +54,13 @@ func (s Server) IsAdmin(uid string) bool {
 }
 
 type Bot struct {
-	dg  *DG.Session
-	db  *storm.DB
-	Log LR.Logger
-	tag string
+	dg      *DG.Session
+	db      *storm.DB
+	Log     LR.Logger
+	UserID  string
+	Mention string
+	Items   map[string]Item
+	ItemIds []string
 }
 
 type HandlerConstructor func(*Bot, string) func(*DG.Session, *DG.MessageCreate)

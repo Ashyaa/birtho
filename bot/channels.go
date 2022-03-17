@@ -10,7 +10,7 @@ import (
 
 func RemoveChannel(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
+		if m.Author.ID == b.UserID {
 			return
 		}
 
@@ -49,7 +49,7 @@ func RemoveChannel(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 
 func AddChannel(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
+		if m.Author.ID == b.UserID {
 			return
 		}
 
@@ -88,7 +88,7 @@ func AddChannel(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 
 func Channels(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
+		if m.Author.ID == b.UserID {
 			return
 		}
 

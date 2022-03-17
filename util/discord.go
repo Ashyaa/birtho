@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	DG "github.com/bwmarrin/discordgo"
 )
@@ -36,6 +37,11 @@ func StripUserTag(uid string) (string, bool) {
 // Returns the discord user tag for user with ID uid
 func BuildUserTag(uid string) string {
 	return fmt.Sprintf("<@!%s>", uid)
+}
+
+// Returns the discord user tag for user with ID uid
+func Timestamp(t time.Time) string {
+	return fmt.Sprintf("<t:%d:R>", t.Unix())
 }
 
 // Return true if cid is a valid channel in the guild identifed by gid

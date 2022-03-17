@@ -2,7 +2,10 @@ package bot
 
 import (
 	"fmt"
+	"math/rand"
+	"strconv"
 	"strings"
+	"time"
 
 	U "github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
@@ -11,13 +14,14 @@ import (
 )
 
 func New(log LR.Logger) (*Bot, error) {
-	conf, err := ReadConfig()
+	conf, err := ReadConfig(log)
 	if err != nil {
 		log.Error("error reading config: ", err)
 		return nil, err
 	}
 
 	res := Bot{Log: log}
+	res.buildItemDict(conf)
 
 	res.dg, err = DG.New("Bot " + conf.Token)
 	if err != nil {
@@ -31,6 +35,9 @@ func New(log LR.Logger) (*Bot, error) {
 	// Install command handlers
 	res.SetupCommands()
 
+	// Provide a seed for the pseudo-random number generator
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	res.dg.Identify.Intents = DG.IntentsGuildMessages
 
 	// Open a websocket connection to Discord and begin listening.
@@ -39,6 +46,8 @@ func New(log LR.Logger) (*Bot, error) {
 		res.ErrorE(err, "error opening connection")
 		return nil, err
 	}
+	res.UserID = res.dg.State.User.ID
+	res.Mention = U.BuildUserTag(res.UserID)
 
 	return &res, nil
 }
@@ -51,13 +60,6 @@ func (b *Bot) SetupCommands() {
 	}
 }
 
-func (b *Bot) Tag() string {
-	if b.tag == "" {
-		b.tag = "<@!" + b.dg.State.User.ID + ">"
-	}
-	return b.tag
-}
-
 func (b *Bot) Stop() {
 	b.Info("closing database")
 	err := b.db.Close()
@@ -68,7 +70,7 @@ func (b *Bot) Stop() {
 
 // Returns true and the command content if the message triggers the command, else false and an empty string
 func (b *Bot) triggered(s *DG.Session, m *DG.MessageCreate, prefix, command string) ([]string, bool) {
-	tagCommand := b.Tag() + " " + command
+	tagCommand := b.Mention + " " + command
 	payload := []string{}
 	fields := strings.Fields(m.Content)
 	if strings.HasPrefix(m.Content, tagCommand) {
@@ -87,9 +89,22 @@ func (b *Bot) triggered(s *DG.Session, m *DG.MessageCreate, prefix, command stri
 	return payload, false
 }
 
+func (b *Bot) buildItemDict(conf Config) {
+	b.ItemIds = make([]string, 0)
+	b.Items = make(map[string]Item)
+	for _, item := range conf.Items {
+		if item.URL == "" {
+			continue
+		}
+		key := strconv.Itoa(item.ID)
+		b.ItemIds = append(b.ItemIds, key)
+		b.Items[key] = item
+	}
+}
+
 func SetPrefix(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
+		if m.Author.ID == b.UserID {
 			return
 		}
 
@@ -122,7 +137,7 @@ func SetPrefix(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 
 func Prefix(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
+		if m.Author.ID == b.UserID {
 			return
 		}
 
@@ -146,7 +161,7 @@ func Prefix(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 
 func Info(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
+		if m.Author.ID == b.UserID {
 			return
 		}
 
@@ -172,6 +187,10 @@ func Info(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			status = "on"
 		}
 		msg.AddField("Play status", fmt.Sprintf("`%s`", status))
+
+		if serv.G.On {
+			msg.AddField("Next spawn", U.Timestamp(serv.G.NextSpawn))
+		}
 
 		// Show configured prefix
 		msg.AddField("Prefix", fmt.Sprintf("`%s`", serv.Prefix))
