@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -11,40 +10,41 @@ import (
 	"github.com/koffeinsource/go-imgur"
 	"github.com/koffeinsource/go-klogger"
 	LR "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
 
 type Item struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Path string `json:"path"`
-	URL  string `json:"url"`
+	ID   int    `json:"id" yaml:"id"`
+	Name string `json:"name" yaml:"name"`
+	Path string `json:"path" yaml:"path"`
+	URL  string `json:"url" yaml:"url"`
 }
 
 type Config struct {
-	AppID             int    `json:"app-id"`
-	ClientID          int    `json:"client-id"`
-	PublicKey         string `json:"public-key"`
-	ImgurClientID     string `json:"imgur-client-id"`
-	ImgurClientSecret string `json:"imgur-client-secret"`
-	Token             string `json:"token"`
-	Items             []Item `json:"items"`
+	AppID             int    `json:"app-id" yaml:"app-id"`
+	ClientID          int    `json:"client-id" yaml:"client-id"`
+	PublicKey         string `json:"public-key" yaml:"public-key"`
+	ImgurClientID     string `json:"imgur-client-id" yaml:"imgur-client-id"`
+	ImgurClientSecret string `json:"imgur-client-secret" yaml:"imgur-client-secret"`
+	Token             string `json:"token" yaml:"token"`
+	Items             []Item `json:"items" yaml:"items"`
 	filepath          string
 }
 
 func ReadConfig(log LR.Logger) (Config, error) {
 	filepath := os.Getenv("BIRTHO_CONFIG")
 	if filepath == "" {
-		filepath = "config/data.json"
+		filepath = "config/data.yml"
 	}
-	jsonFile, err := os.Open(filepath)
+	rawFile, err := os.Open(filepath)
 	if err != nil {
 		return Config{}, err
 	}
-	defer jsonFile.Close()
+	defer rawFile.Close()
 
-	bytes, _ := ioutil.ReadAll(jsonFile)
+	bytes, _ := ioutil.ReadAll(rawFile)
 	var conf Config
-	err = json.Unmarshal(bytes, &conf)
+	err = yaml.Unmarshal(bytes, &conf)
 	if err != nil {
 		return Config{}, err
 	}
@@ -67,21 +67,21 @@ func (c *Config) initImages(log LR.Logger) {
 	client.ImgurClientID = *&c.ImgurClientID
 	configDir := path.Dir(c.filepath)
 
-	for idx, img := range c.Items {
-		if img.ID <= 0 {
+	for idx, item := range c.Items {
+		if item.ID <= 0 {
 			c.Items[idx].ID = max + 1
 			max += 1
-			log.Info("wrote ID %d to item %s", c.Items[idx].ID, img.Name)
+			log.Infof("wrote ID %d to item %s", c.Items[idx].ID, item.Name)
 			modified = true
 		}
-		if img.URL == "" {
-			filepath := path.Join(configDir, img.Path)
+		if item.URL == "" {
+			filepath := path.Join(configDir, item.Path)
 			img, st, err := client.UploadImageFromFile(filepath, "", "gothella", "")
 			if st != 200 || err != nil {
-				log.Errorf("failed to upload %s image to imgur: %v\n", img.Name, st)
-				log.Errorf("failed to upload %s image to imgur: %v\n", img.Name, err)
+				log.Errorf("failed to upload %s image to imgur: %v\n", item.Name, st)
+				log.Errorf("failed to upload %s image to imgur: %v\n", item.Name, err)
 			} else {
-				log.Infof("succesfully uploaded %s image to imgur", img.Name)
+				log.Infof("succesfully uploaded %s image to imgur", item.Name)
 				c.Items[idx].URL = img.Link
 				modified = true
 			}
@@ -89,7 +89,7 @@ func (c *Config) initImages(log LR.Logger) {
 	}
 
 	if modified {
-		file, err := json.MarshalIndent(c, "", "    ")
+		file, err := yaml.Marshal(c)
 		if err != nil {
 			return
 		}
