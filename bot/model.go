@@ -54,13 +54,14 @@ func (s Server) IsAdmin(uid string) bool {
 }
 
 type Bot struct {
-	dg      *DG.Session
-	db      *storm.DB
-	Log     LR.Logger
-	UserID  string
-	Mention string
-	Items   map[string]Item
-	ItemIds []string
+	dg                  *DG.Session
+	db                  *storm.DB
+	Log                 LR.Logger
+	UserID              string
+	Mention             string
+	Monsters            map[string]Monster
+	MonsterIds          []string
+	EqualMonsterChances bool
 }
 
 type HandlerConstructor func(*Bot, string) func(*DG.Session, *DG.MessageCreate)

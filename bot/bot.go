@@ -21,7 +21,7 @@ func New(log LR.Logger) (*Bot, error) {
 	}
 
 	res := Bot{Log: log}
-	res.buildItemDict(conf)
+	res.buildGameData(conf)
 
 	res.dg, err = DG.New("Bot " + conf.Token)
 	if err != nil {
@@ -95,16 +95,35 @@ func (b *Bot) triggered(s *DG.Session, m *DG.MessageCreate, prefix, command stri
 	return payload, false
 }
 
-func (b *Bot) buildItemDict(conf Config) {
-	b.ItemIds = make([]string, 0)
-	b.Items = make(map[string]Item)
-	for _, item := range conf.Items {
-		if item.URL == "" {
+func (b *Bot) buildGameData(conf Config) {
+	b.MonsterIds = make([]string, 0)
+	b.Monsters = make(map[string]Monster)
+	sum := 1
+	for _, monster := range conf.Monsters {
+		if monster.URL == "" {
 			continue
 		}
-		key := strconv.Itoa(item.ID)
-		b.ItemIds = append(b.ItemIds, key)
-		b.Items[key] = item
+		key := strconv.Itoa(monster.ID)
+		b.MonsterIds = append(b.MonsterIds, key)
+		chance := int(monster.Chance * 100)
+		monster.Range.min = sum
+		monster.Range.max = sum + chance - 1
+		if !monster.buildItemRanges(b.Log) {
+			b.Error("monster '%s' has no items and will be skipped", monster.Name)
+			continue
+		}
+		b.Monsters[key] = monster
+		sum += chance
+	}
+	if sum-1 != 10000 {
+		if sum > 1 {
+			b.Warn("the sum of monster spawn chances is not equal to 100")
+		}
+		b.EqualMonsterChances = true
+		b.Info("all monsters set to have equal chances to spawn")
+	}
+	if len(b.Monsters) == 0 {
+		b.Fatal("no valid monsters in the configuration")
 	}
 }
 

@@ -12,10 +12,20 @@ import (
 	embed "github.com/clinet/discordgo-embed"
 )
 
-func (b *Bot) RandomItem() Item {
-	index := rand.Intn(len(b.ItemIds))
-	key := b.ItemIds[index]
-	return b.Items[key]
+func (b *Bot) RandomMonster() Monster {
+	if b.EqualMonsterChances {
+		index := rand.Intn(len(b.MonsterIds))
+		key := b.MonsterIds[index]
+		return b.Monsters[key]
+	}
+	number := rand.Intn(10000) + 1
+	for _, m := range b.Monsters {
+		if m.Range.Belongs(number) {
+			return m
+		}
+	}
+	b.Fatal("invalid monster roll")
+	return Monster{}
 }
 
 func Play(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
@@ -106,15 +116,15 @@ func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		}
 		b.Info("command %s triggered", cmd)
 
-		item := b.RandomItem()
+		monster := b.RandomMonster()
 		spawn := ItemSpawn{
-			ID: strconv.Itoa(item.ID),
+			ID: strconv.Itoa(monster.ID),
 		}
 
 		msg, err := s.ChannelMessageSendEmbed(channel, embed.NewEmbed().
-			SetDescription(fmt.Sprintf("`%s` appeared!", item.Name)).
+			SetDescription(fmt.Sprintf("`%s` appeared!", monster.Name)).
 			SetColor(0x00FF00).
-			SetImage(item.URL).MessageEmbed)
+			SetImage(monster.URL).MessageEmbed)
 		if err != nil {
 			b.ErrorE(err, "spawn message")
 			return
@@ -134,7 +144,7 @@ func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			b.SaveServer(curServ)
 
 			edit := DG.NewMessageEdit(channel, msg.ID).SetEmbed(embed.NewEmbed().
-				SetDescription(fmt.Sprintf("`%s` left...", item.Name)).
+				SetDescription(fmt.Sprintf("`%s` left...", monster.Name)).
 				SetColor(0xFF0000).MessageEmbed)
 			s.ChannelMessageEditComplex(edit)
 		})
@@ -155,6 +165,7 @@ func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			return
 		}
 
+		// TODO: trick or treat system
 		_, ok := b.triggered(s, m, serv.Prefix, cmd)
 		if !ok {
 			return
@@ -165,12 +176,13 @@ func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		}
 		b.Info("command %s triggered", cmd)
 
-		item := b.Items[spawn.ID]
-		text := fmt.Sprintf("%s grabbed `%s`!", U.BuildUserTag(user), item.Name)
+		monster := b.Monsters[spawn.ID]
+		item := monster.RandomItem(b.Log)
+		text := fmt.Sprintf("%s grabbed `%s`, and got `%s` as reward!", U.BuildUserTag(user), monster.Name, item.Name)
 		s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
 			SetDescription(text).
 			SetColor(0xFFFFFF).
-			SetImage(item.URL).MessageEmbed)
+			SetImage(monster.URL).MessageEmbed)
 
 		_, ok = serv.Users[user]
 		if !ok {
