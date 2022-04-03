@@ -74,6 +74,9 @@ func (b *Bot) triggered(s *DG.Session, m *DG.MessageCreate, prefix, command stri
 	payload := []string{}
 	fields := strings.Fields(m.Content)
 	if strings.HasPrefix(m.Content, tagCommand) {
+		if len(m.Content) > len(tagCommand) && !strings.HasPrefix(m.Content, tagCommand+" ") {
+			return payload, false
+		}
 		if len(fields) > 2 {
 			payload = fields[2:]
 		}
@@ -81,6 +84,9 @@ func (b *Bot) triggered(s *DG.Session, m *DG.MessageCreate, prefix, command stri
 	}
 	prefixCommand := prefix + command
 	if strings.HasPrefix(m.Content, prefixCommand) {
+		if len(m.Content) > len(prefixCommand) && !strings.HasPrefix(m.Content, prefixCommand+" ") {
+			return payload, false
+		}
 		if len(fields) > 1 {
 			payload = fields[1:]
 		}
