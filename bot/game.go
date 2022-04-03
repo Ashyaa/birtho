@@ -63,6 +63,33 @@ func Play(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	}
 }
 
+func Reset(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
+	return func(s *DG.Session, m *DG.MessageCreate) {
+		if m.Author.ID == b.UserID {
+			return
+		}
+
+		serv := b.GetServer(m.GuildID)
+		if !serv.IsAdmin(m.Author.ID) {
+			return
+		}
+
+		channel := m.ChannelID
+
+		_, ok := b.triggered(s, m, serv.Prefix, cmd)
+		if !ok {
+			return
+		}
+		b.Info("command %s triggered", cmd)
+
+		serv.Users = make(map[string][]string)
+		b.SaveServer(serv)
+
+		msg := "Cleared all players' item list"
+		s.ChannelMessageSend(channel, msg)
+	}
+}
+
 func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
 		if m.Author.ID == b.UserID {

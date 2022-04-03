@@ -82,6 +82,7 @@ var Commands = []Command{
 	{"chanlist", Channels},
 	{"info", Info},
 	{"play", Play},
+	{"reset", Reset},
 
 	// Game commands
 	{"spawn", Spawn},
