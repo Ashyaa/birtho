@@ -117,7 +117,7 @@ func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		b.Info("command %s triggered", cmd)
 
 		monster := b.RandomMonster()
-		spawn := ItemSpawn{
+		spawn := MonsterSpawn{
 			ID: strconv.Itoa(monster.ID),
 		}
 
@@ -130,17 +130,17 @@ func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			return
 		}
 		spawn.Message = msg.ID
-		serv.G.Items[channel] = spawn
+		serv.G.Monsters[channel] = spawn
 		serv.Cooldown()
 		b.SaveServer(serv)
 
 		time.AfterFunc(5*time.Second, func() {
 			curServ := b.GetServer(m.GuildID)
-			_, ok := curServ.G.Items[channel]
+			_, ok := curServ.G.Monsters[channel]
 			if !ok {
 				return
 			}
-			delete(curServ.G.Items, channel)
+			delete(curServ.G.Monsters, channel)
 			b.SaveServer(curServ)
 
 			edit := DG.NewMessageEdit(channel, msg.ID).SetEmbed(embed.NewEmbed().
@@ -170,7 +170,7 @@ func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		if !ok {
 			return
 		}
-		spawn, ok := serv.G.Items[channel]
+		spawn, ok := serv.G.Monsters[channel]
 		if !ok {
 			return
 		}
@@ -189,7 +189,7 @@ func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			serv.Users[user] = make([]string, 0)
 		}
 		serv.Users[user] = U.AppendUnique(serv.Users[user], spawn.ID)
-		delete(serv.G.Items, channel)
+		delete(serv.G.Monsters, channel)
 
 		b.SaveServer(serv)
 	}

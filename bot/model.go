@@ -11,17 +11,21 @@ import (
 )
 
 const DefaultPrefix = "b!"
+const DefaultMinDelay = 120
+const DefaultVariableDelay = 781
 
-type ItemSpawn struct {
+type MonsterSpawn struct {
 	ID      string
 	Message string
 }
 
 type Game struct {
-	On        bool
-	Items     map[string]ItemSpawn
-	messageID string
-	NextSpawn time.Time
+	On            bool
+	Monsters      map[string]MonsterSpawn
+	messageID     string
+	NextSpawn     time.Time
+	MinDelay      time.Duration
+	VariableDelay int
 }
 
 type Server struct {
@@ -41,8 +45,10 @@ func (s Server) CanSpawn(cid string) bool {
 
 // Cooldown sets the server game on cooldown
 func (s *Server) Cooldown() {
-	s.G.NextSpawn = time.Now().Local().Add(2 * time.Minute)                        // Base cooldown of 2mn
-	s.G.NextSpawn = s.G.NextSpawn.Add(time.Duration(rand.Intn(780)) * time.Second) // variable cooldown, up to 15mn total
+	minDelay := time.Duration(s.G.MinDelay) * time.Second
+	randomDelay := time.Duration(rand.Intn(s.G.VariableDelay)) * time.Second
+	s.G.NextSpawn = time.Now().Local().Add(minDelay) // Base cooldown of 2mn
+	s.G.NextSpawn = s.G.NextSpawn.Add(randomDelay)   // variable cooldown, up to 15mn total
 }
 
 func (s Server) IsAdmin(uid string) bool {
@@ -75,6 +81,7 @@ var Commands = []Command{
 	// Administration commands
 	{"prefix", Prefix},
 	{"setprefix", SetPrefix},
+	{"setcd", SetCooldown},
 	{"addchan", AddChannel},
 	{"rmvchan", RemoveChannel},
 	{"addadmin", AddAdmin},
