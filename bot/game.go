@@ -134,7 +134,7 @@ func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		serv.Cooldown()
 		b.SaveServer(serv)
 
-		time.AfterFunc(5*time.Second, func() {
+		time.AfterFunc(serv.G.StayTime, func() {
 			curServ := b.GetServer(m.GuildID)
 			_, ok := curServ.G.Monsters[channel]
 			if !ok {

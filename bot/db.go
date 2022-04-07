@@ -34,6 +34,7 @@ func (b *Bot) NewServer(id string) Server {
 			Monsters:      make(map[string]MonsterSpawn),
 			MinDelay:      DefaultMinDelay,
 			VariableDelay: DefaultVariableDelay,
+			StayTime:      DefaultStayTime,
 		},
 		Channels: make([]string, 0),
 		Admins:   make([]string, 0),

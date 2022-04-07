@@ -12,6 +12,7 @@ Halloween "Trick or Treat"-like bot in Go
 - Commands can be used with the configured prefix (eg `a!info`) or with a mention to the bot (eg `@bot info`)
 - Command to reset the game
 - Command to configure the minimum and maximum cooldown for monster spawns
+- Command to configure how long a monster stays before leaving
 
 ## Basic game features
 - The list of monsters and items the bot will use is read from a YAML configuration file, not provided in the repository (see YAML Configuration)
@@ -38,7 +39,4 @@ Halloween "Trick or Treat"-like bot in Go
 - Trick or Treat system: users have to use the correct command for each monster
   - Random or fixed by monster?
 - Score system
-- Winner announcement
-
-## Configuration
-- Make appearance duration configurable
+- Winner announcement (give a role to the winner?)

@@ -13,6 +13,7 @@ import (
 const DefaultPrefix = "b!"
 const DefaultMinDelay = 120
 const DefaultVariableDelay = 781
+const DefaultStayTime = 5 * time.Second
 
 type MonsterSpawn struct {
 	ID      string
@@ -25,6 +26,7 @@ type Game struct {
 	messageID     string
 	NextSpawn     time.Time
 	MinDelay      time.Duration
+	StayTime      time.Duration
 	VariableDelay int
 }
 
@@ -82,6 +84,7 @@ var Commands = []Command{
 	{"prefix", Prefix},
 	{"setprefix", SetPrefix},
 	{"setcd", SetCooldown},
+	{"setstay", SetStay},
 	{"addchan", AddChannel},
 	{"rmvchan", RemoveChannel},
 	{"addadmin", AddAdmin},

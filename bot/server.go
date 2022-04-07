@@ -127,6 +127,46 @@ func SetCooldown(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	}
 }
 
+func SetStay(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
+	return func(s *DG.Session, m *DG.MessageCreate) {
+		if m.Author.ID == b.UserID {
+			return
+		}
+
+		serv := b.GetServer(m.GuildID)
+		if !serv.IsAdmin(m.Author.ID) {
+			return
+		}
+
+		channel := m.ChannelID
+
+		payload, ok := b.triggered(s, m, serv.Prefix, cmd)
+		if !ok {
+			return
+		}
+		if len(payload) == 0 {
+			msg := fmt.Sprintf("No enough arguments! \nUsage: `%s%s <delay>`\n"+
+				"The stay time is expected to be a time in seconds.", serv.Prefix, cmd)
+			s.ChannelMessageSend(channel, msg)
+			return
+		}
+
+		b.Info("command %s triggered", cmd)
+		nbSeconds, err := strconv.Atoi(payload[0])
+		if err != nil || nbSeconds <= 0 {
+			msg := fmt.Sprintf("`%s` is not a valid number of seconds", payload[0])
+			s.ChannelMessageSend(channel, msg)
+			return
+		}
+
+		serv.G.StayTime = time.Duration(nbSeconds) * time.Second
+		b.SaveServer(serv)
+
+		msg := fmt.Sprintf("Stay time set to `%s`", serv.G.StayTime)
+		s.ChannelMessageSend(channel, msg)
+	}
+}
+
 func Info(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
 		if m.Author.ID == b.UserID {
