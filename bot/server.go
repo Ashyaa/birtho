@@ -204,6 +204,9 @@ func Info(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		maxDelay := serv.G.MinDelay + time.Duration(serv.G.VariableDelay-1)*time.Second
 		msg.AddField("Cooldown", fmt.Sprintf("`%v - %v`", serv.G.MinDelay, maxDelay))
 
+		// Show configured monster stay time
+		msg.AddField("Monster stay time", fmt.Sprintf("`%v`", serv.G.StayTime))
+
 		// Show configured prefix
 		msg.AddField("Prefix", fmt.Sprintf("`%s`", serv.Prefix))
 
