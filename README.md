@@ -20,7 +20,8 @@ Halloween "Trick or Treat"-like bot in Go
   - Each monster can be given a chance to spawn, else all monsters have the same chance to spawn
   - Each item a monster can give can have a chance to be given, else all items have the same chance
 - Monsters appear when user post messages in the configured channels
-- Users grab an item with a dedicated command, only the first user grabs the item
+- Monsters drop an item when a user uses either the "trick" or the "treat" command. If the correct command is used, the user gets an item, else it maakes the monster leave. Whatever the result, only the first command is
+aacknowledged, it's a matter of who is the fastest to type the command.
 - If no one grabs the item within a few seconds, it disappears
 - Whether or not it was grabbed by a user, a delay is put in place before another item appears
 - The bot keeps in memory which items were grabbed by each user; repeats do not count
@@ -28,15 +29,14 @@ Halloween "Trick or Treat"-like bot in Go
 
 # TODO
 ## Scoreboard commands:
-- By user
-- For the whole server
+- By user: list of missing items
+- For the whole server: score ranking for all players that have played (that have used trick or treat at least once)
 
 ## A `how to play` command
 - By DM
 - On the server itself
 
 ## Game
-- Trick or Treat system: users have to use the correct command for each monster
-  - Random or fixed by monster?
-- Score system
+- 15 monsters; 1pt for a common item, 5 for uncommon, 10 for rare (240 points total)
+- items spawns: 50% - 35% - 15%
 - Winner announcement (give a role to the winner?)

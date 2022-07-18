@@ -97,5 +97,6 @@ var Commands = []Command{
 
 	// Game commands
 	{"spawn", Spawn},
-	{"grab", Grab},
+	{"trick", Grab},
+	{"treat", Grab},
 }

@@ -165,7 +165,6 @@ func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			return
 		}
 
-		// TODO: trick or treat system
 		_, ok := b.triggered(s, m, serv.Prefix, cmd)
 		if !ok {
 			return
@@ -176,21 +175,33 @@ func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		}
 		b.Info("command %s triggered", cmd)
 
-		monster := b.Monsters[spawn.ID]
-		item := monster.RandomItem(b.Log)
-		text := fmt.Sprintf("%s grabbed `%s`, and got `%s` as reward!", U.BuildUserTag(user), monster.Name, item.Name)
-		s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
-			SetDescription(text).
-			SetColor(0xFFFFFF).
-			SetImage(monster.URL).MessageEmbed)
-
-		_, ok = serv.Users[user]
-		if !ok {
+		if _, ok = serv.Users[user]; !ok {
 			serv.Users[user] = make([]string, 0)
 		}
-		serv.Users[user] = U.AppendUnique(serv.Users[user], spawn.ID)
-		delete(serv.G.Monsters, channel)
 
+		if trickOrTreat() {
+			monster := b.Monsters[spawn.ID]
+			item := monster.RandomItem(b.Log)
+			text := fmt.Sprintf("As a thank you for your kindness, **%s** gives %s one **%s**",
+				monster.Name, U.BuildUserTag(user), item.Name)
+			s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
+				SetDescription(text).
+				SetColor(0xFFFFFF).
+				SetImage(monster.URL).MessageEmbed)
+			serv.Users[user] = U.AppendUnique(serv.Users[user], item.Name)
+		} else {
+			monster := b.Monsters[spawn.ID]
+			text := fmt.Sprintf("%s scared **%s** away...", U.BuildUserTag(user), monster.Name)
+			s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
+				SetDescription(text).
+				SetColor(0xFF0000).MessageEmbed)
+		}
+		delete(serv.G.Monsters, channel)
 		b.SaveServer(serv)
 	}
+}
+
+func trickOrTreat() bool {
+	n := rand.Intn(1000)
+	return n > 499
 }
