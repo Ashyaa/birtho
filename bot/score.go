@@ -15,8 +15,8 @@ func (b *Bot) GetUserScore(user string, serv Server) int {
 	if _, ok := serv.Users[user]; !ok {
 		serv.Users[user] = make([]string, 0)
 	}
-	for _, itemName := range serv.Users[user] {
-		if item, ok := b.Items[itemName]; ok {
+	for _, itemID := range serv.Users[user] {
+		if item, ok := b.Items[itemID]; ok {
 			res += item.Points
 		}
 	}
@@ -177,6 +177,16 @@ func wrap(in string, width int) (r1 string, r2 string) {
 	return
 }
 
+func (b *Bot) getItemList(usr string, serv Server) []string {
+	res := []string{}
+	for _, itemID := range serv.Users[usr] {
+		if item, ok := b.Items[itemID]; ok {
+			res = append(res, item.Name)
+		}
+	}
+	return res
+}
+
 func formatItemList(items []string) []string {
 	lines := [][2]string{}
 	len := utf8.RuneCountInString
@@ -228,7 +238,8 @@ func Score(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		if dgUser, err := s.GuildMember(m.GuildID, usr); err == nil {
 			username = dgUser.Nick
 		}
-		menu := NewMenu(formatItemList(serv.Users[usr]), 20, channel, m.GuildID)
+		itemList := b.getItemList(usr, serv)
+		menu := NewMenu(formatItemList(itemList), 20, channel, m.GuildID)
 		menu.SetTitle(username + "'s scoreboard")
 		infos := fmt.Sprintf("Items: `%d/%d`", len(serv.Users[usr]), len(b.Items))
 		infos += "⁠ ⁠ ⁠ ⁠ ⁠ " + fmt.Sprintf("Points: `%d`", b.GetUserScore(usr, serv))

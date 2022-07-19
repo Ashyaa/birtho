@@ -128,7 +128,7 @@ func (b *Bot) buildGameData(conf Config) {
 
 func (b *Bot) AddItems(items []Item) {
 	for _, item := range items {
-		b.Items[item.Name] = item
+		b.Items[item.ID] = item
 	}
 }
 

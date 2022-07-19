@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -24,6 +25,7 @@ func (r Range) Belongs(n int) bool {
 }
 
 type Item struct {
+	ID     string
 	Name   string  `json:"name" yaml:"name"`
 	Chance float64 `json:"chance" yaml:"chance"`
 	Points int     `json:"points" yaml:"points"`
@@ -52,6 +54,7 @@ func (m *Monster) buildItems(log LR.Logger) bool {
 			m.Items[i].Points = 1
 		}
 		chance := int(item.Chance * 100)
+		m.Items[i].ID = fmt.Sprintf("m%di%d", m.ID, i+1)
 		m.Items[i].Range.min = sum
 		m.Items[i].Range.max = sum + chance - 1
 		sum += chance

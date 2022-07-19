@@ -188,7 +188,7 @@ func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 				SetDescription(text).
 				SetColor(0xFFFFFF).
 				SetImage(monster.URL).MessageEmbed)
-			serv.Users[user] = U.AppendUnique(serv.Users[user], item.Name)
+			serv.Users[user] = U.AppendUnique(serv.Users[user], item.ID)
 		} else {
 			monster := b.Monsters[spawn.ID]
 			text := fmt.Sprintf("%s scared **%s** away...", U.BuildUserTag(user), monster.Name)
@@ -232,7 +232,7 @@ func GiveRandom(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		serv.Users[usr] = U.AppendUnique(serv.Users[usr], item)
 		b.SaveServer(serv)
 
-		msg := fmt.Sprintf("Gave you one `%s`", item)
+		msg := fmt.Sprintf("Gave you one `%s`", b.Items[item].Name)
 		s.ChannelMessageSend(m.ChannelID, msg)
 	}
 }
