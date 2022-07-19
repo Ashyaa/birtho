@@ -205,3 +205,34 @@ func trickOrTreat() bool {
 	n := rand.Intn(1000)
 	return n > 499
 }
+
+func GiveRandom(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
+	return func(s *DG.Session, m *DG.MessageCreate) {
+		usr := m.Author.ID
+		if usr == b.UserID {
+			return
+		}
+
+		serv := b.GetServer(m.GuildID)
+		_, ok := b.triggered(s, m, serv.Prefix, cmd)
+		if !ok || !serv.IsAdmin(usr) {
+			return
+		}
+		b.Info("command %s triggered", cmd)
+
+		items := []string{}
+		for item := range b.Items {
+			items = append(items, item)
+		}
+
+		item := items[rand.Intn(len(items))]
+		if _, ok := serv.Users[usr]; !ok {
+			serv.Users[usr] = make([]string, 0)
+		}
+		serv.Users[usr] = U.AppendUnique(serv.Users[usr], item)
+		b.SaveServer(serv)
+
+		msg := fmt.Sprintf("Gave you one `%s`", item)
+		s.ChannelMessageSend(m.ChannelID, msg)
+	}
+}

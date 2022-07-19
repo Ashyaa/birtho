@@ -96,6 +96,7 @@ var Commands = []Command{
 	{"info", Info},
 	{"play", Play},
 	{"reset", Reset},
+	{"give", GiveRandom},
 
 	// Game commands
 	{"spawn", Spawn},
