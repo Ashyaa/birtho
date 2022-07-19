@@ -104,5 +104,5 @@ var Commands = []Command{
 
 	// Score commands
 	{"leaderboard", Leaderboard},
-	// {"score", score},
+	{"score", Score},
 }

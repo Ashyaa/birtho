@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -97,6 +98,7 @@ func (m *Menu) render() *DG.MessageEmbed {
 	return embed.NewEmbed().
 		SetTitle(m.title).
 		SetDescription(text).
+		SetFooter(fmt.Sprintf("Page %d/%d", m.page, m.maxPage)).
 		SetColor(0x555555).MessageEmbed
 }
 

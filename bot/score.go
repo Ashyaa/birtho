@@ -22,8 +22,10 @@ func (b *Bot) GetUserScore(user string, serv Server) int {
 }
 
 type scoreboard struct {
-	user  string
-	score int
+	userID string
+	user   string
+	score  int
+	rank   string
 }
 
 type leaderboard []scoreboard
@@ -42,8 +44,8 @@ func (l leaderboard) Strings() []string {
 	if len(l) == 0 {
 		return res
 	}
-	for pos, sb := range l {
-		rank := rankString(pos + 1)
+	for _, sb := range l {
+		rank := sb.rank
 		rank = padLeft(rank, rankPlaces-len(rank))
 
 		score := fmt.Sprintf("%d", sb.score)
@@ -85,7 +87,7 @@ func padLeft(s string, padding int) string {
 	return res
 }
 
-func getLeaderBoard(b *Bot, serv Server, s *DG.Session) []string {
+func (b *Bot) getLeaderBoard(serv Server, s *DG.Session) leaderboard {
 	lb := leaderboard{}
 	for usr := range serv.Users {
 		usrName := usr
@@ -93,12 +95,25 @@ func getLeaderBoard(b *Bot, serv Server, s *DG.Session) []string {
 		if err == nil {
 			usrName = dgUsr.Nick
 		}
-		lb = append(lb, scoreboard{usrName, b.GetUserScore(usr, serv)})
+		lb = append(lb, scoreboard{usr, usrName, b.GetUserScore(usr, serv), ""})
 	}
 	sort.Slice(lb, func(i, j int) bool {
 		return lb[i].score > lb[j].score
 	})
-	return lb.Strings()
+	if len(lb) > 0 {
+		rank := 1
+		lb[0].rank = rankString(rank)
+		for i := 1; i < len(lb); i++ {
+			prev := lb[i-1]
+			cur := lb[i]
+			if prev.score != cur.score {
+				rank = i + 1
+			}
+			cur.rank = rankString(rank)
+			lb[i] = cur
+		}
+	}
+	return lb
 }
 
 func Leaderboard(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
@@ -115,11 +130,85 @@ func Leaderboard(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		}
 		b.Info("command %s triggered", cmd)
 
-		lb := getLeaderBoard(b, serv, s)
+		lb := b.getLeaderBoard(serv, s).Strings()
 		menu := NewMenu(lb[1:], 10, channel, m.GuildID)
 		menu.SetHeader(lb[0])
 		menu.SetTitle("Server leaderboard")
 		menu.SetSubtitle(fmt.Sprintf("Total number of points: `%d`", b.TotalPoints()))
+		err := menu.Send(s)
+		if err != nil {
+			b.Error("creating menu: %s", err.Error())
+			return
+		}
+		b.Menus[menu.ID()] = menu
+		time.AfterFunc(time.Duration(61)*time.Second, purgeMenus(b, s))
+	}
+}
+
+func (b *Bot) getRank(usr string, serv Server, s *DG.Session) string {
+	lb := b.getLeaderBoard(serv, s)
+	for _, sb := range lb {
+		if sb.userID == usr {
+			return sb.rank
+		}
+	}
+	return rankString(len(lb) + 1)
+}
+
+func formatItemList(items []string) []string {
+	lines := [][2]string{}
+	maxCol1Width := 0
+	for idx, item := range items {
+		line := (idx/20)*10 + (idx % 10)
+		column := (idx / 10) % 2
+		if column == 0 {
+			lines = append(lines, [2]string{item, ""})
+			if len(item) > maxCol1Width {
+				maxCol1Width = len(item)
+			}
+		} else {
+			lines[line][1] = item
+		}
+	}
+
+	res := []string{}
+	col2Pos := maxCol1Width + 5
+	for _, words := range lines {
+		w1, w2 := words[0], words[1]
+		res = append(res, w1+padLeft(w2, col2Pos-len(w1)))
+	}
+	return res
+}
+
+func Score(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
+	return func(s *DG.Session, m *DG.MessageCreate) {
+		if m.Author.ID == b.UserID {
+			return
+		}
+		serv := b.GetServer(m.GuildID)
+		channel := m.ChannelID
+		usr := m.Author.ID
+
+		_, ok := b.triggered(s, m, serv.Prefix, cmd)
+		if !ok {
+			return
+		}
+		b.Info("command %s triggered", cmd)
+
+		if _, ok := serv.Users[usr]; !ok {
+			serv.Users[usr] = make([]string, 0)
+			b.SaveServer(serv)
+		}
+		username := usr
+		if dgUser, err := s.GuildMember(m.GuildID, usr); err == nil {
+			username = dgUser.Nick
+		}
+		menu := NewMenu(formatItemList(serv.Users[usr]), 10, channel, m.GuildID)
+		menu.SetTitle(username + "'s scoreboard")
+		infos := fmt.Sprintf("Items: `%d/%d`", len(serv.Users[usr]), len(b.Items))
+		infos += "⁠ ⁠ ⁠ ⁠ ⁠ " + fmt.Sprintf("Points: `%d`", b.GetUserScore(usr, serv))
+		infos += "⁠ ⁠ ⁠ ⁠ ⁠ " + fmt.Sprintf("Rank: `%s`", b.getRank(usr, serv, s))
+		menu.SetSubtitle(infos)
 		err := menu.Send(s)
 		if err != nil {
 			b.Error("creating menu: %s", err.Error())
