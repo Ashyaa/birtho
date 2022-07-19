@@ -26,6 +26,7 @@ func (r Range) Belongs(n int) bool {
 type Item struct {
 	Name   string  `json:"name" yaml:"name"`
 	Chance float64 `json:"chance" yaml:"chance"`
+	Points int     `json:"points" yaml:"points"`
 	Range  Range
 }
 
@@ -40,13 +41,16 @@ type Monster struct {
 	EqualItemChances bool
 }
 
-// Build the monster data for the game. Returns false if a major error was encountered, else true.
-func (m *Monster) buildItemRanges(log LR.Logger) bool {
+// Build the item data for the game. Returns false if a major error was encountered, else true.
+func (m *Monster) buildItems(log LR.Logger) bool {
 	sum := 1
 	if len(m.Items) == 0 {
 		return false
 	}
 	for i, item := range m.Items {
+		if item.Points <= 0 {
+			m.Items[i].Points = 1
+		}
 		chance := int(item.Chance * 100)
 		m.Items[i].Range.min = sum
 		m.Items[i].Range.max = sum + chance - 1

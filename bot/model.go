@@ -67,8 +67,10 @@ type Bot struct {
 	Log                 LR.Logger
 	UserID              string
 	Mention             string
+	Items               map[string]Item
 	Monsters            map[string]Monster
 	MonsterIds          []string
+	Menus               map[string]Menu
 	EqualMonsterChances bool
 }
 
@@ -99,4 +101,8 @@ var Commands = []Command{
 	{"spawn", Spawn},
 	{"trick", Grab},
 	{"treat", Grab},
+
+	// Score commands
+	{"leaderboard", Leaderboard},
+	// {"score", score},
 }
