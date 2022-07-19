@@ -121,8 +121,8 @@ func SetCooldown(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		serv.G.VariableDelay = maxNbSeconds - minNbSeconds + 1
 		b.SaveServer(serv)
 
-		msg := fmt.Sprintf("Mininum cooldown set to `%s`\n"+
-			"Mininum cooldown set to `%s`\n", minDelay, maxDelay)
+		msg := fmt.Sprintf("Mininum cooldown set to `%s`.\n"+
+			"Maxinum cooldown set to `%s`.\n", minDelay, maxDelay)
 		s.ChannelMessageSend(channel, msg)
 	}
 }
