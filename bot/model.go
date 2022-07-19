@@ -23,7 +23,6 @@ type MonsterSpawn struct {
 type Game struct {
 	On            bool
 	Monsters      map[string]MonsterSpawn
-	messageID     string
 	NextSpawn     time.Time
 	MinDelay      time.Duration
 	StayTime      time.Duration

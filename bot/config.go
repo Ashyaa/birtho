@@ -128,7 +128,7 @@ func (c *Config) init(log LR.Logger) {
 	client := new(imgur.Client)
 	client.HTTPClient = new(http.Client)
 	client.Log = new(klogger.CLILogger)
-	client.ImgurClientID = *&c.ImgurClientID
+	client.ImgurClientID = c.ImgurClientID
 	configDir := path.Dir(c.filepath)
 
 	for idx, monster := range c.Monsters {

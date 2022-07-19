@@ -81,7 +81,7 @@ func padLeft(s string, padding int) string {
 	if padding <= 0 {
 		return s
 	}
-	res := "⁠" + s
+	res := "\u2060" + s
 
 	for i := 0; i < padding; i++ {
 		res = " " + res
@@ -242,8 +242,8 @@ func Score(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		menu := NewMenu(formatItemList(itemList), 20, channel, m.GuildID)
 		menu.SetTitle(username + "'s scoreboard")
 		infos := fmt.Sprintf("Items: `%d/%d`", len(serv.Users[usr]), len(b.Items))
-		infos += "⁠ ⁠ ⁠ ⁠ ⁠ " + fmt.Sprintf("Points: `%d`", b.GetUserScore(usr, serv))
-		infos += "⁠ ⁠ ⁠ ⁠ ⁠ " + fmt.Sprintf("Rank: `%s`", b.getRank(usr, serv, s))
+		infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Points: `%d`", b.GetUserScore(usr, serv))
+		infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Rank: `%s`", b.getRank(usr, serv, s))
 		menu.SetSubtitle(infos)
 		err := menu.Send(s)
 		if err != nil {
