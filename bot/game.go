@@ -122,7 +122,8 @@ func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		}
 
 		msg, err := s.ChannelMessageSendEmbed(channel, embed.NewEmbed().
-			SetDescription(fmt.Sprintf("`%s` appeared!", monster.Name)).
+			SetTitle("A visitor has come!").
+			SetDescription(fmt.Sprintf("**%s** appeared!", monster.Name)).
 			SetColor(0x00FF00).
 			SetImage(monster.URL).MessageEmbed)
 		if err != nil {
@@ -144,7 +145,8 @@ func Spawn(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			b.SaveServer(curServ)
 
 			edit := DG.NewMessageEdit(channel, msg.ID).SetEmbed(embed.NewEmbed().
-				SetDescription(fmt.Sprintf("`%s` left...", monster.Name)).
+				SetTitle("The visitor has left.").
+				SetDescription(fmt.Sprintf("**%s** left...", monster.Name)).
 				SetColor(0xFF0000).MessageEmbed)
 			s.ChannelMessageEditComplex(edit)
 		})
@@ -185,20 +187,35 @@ func Grab(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 			text := fmt.Sprintf("As a thank you for your kindness, **%s** gives %s one **%s**",
 				monster.Name, U.BuildUserTag(user), item.Name)
 			s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
+				SetTitle("The visitor has been pleased!").
 				SetDescription(text).
 				SetColor(0xFFFFFF).
+				SetFooter(itemDescription(item)).
 				SetImage(monster.URL).MessageEmbed)
 			serv.Users[user] = U.AppendUnique(serv.Users[user], item.ID)
 		} else {
 			monster := b.Monsters[spawn.ID]
 			text := fmt.Sprintf("%s scared **%s** away...", U.BuildUserTag(user), monster.Name)
 			s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
+				SetTitle("The visitor has fled!").
 				SetDescription(text).
 				SetColor(0xFF0000).MessageEmbed)
 		}
 		delete(serv.G.Monsters, channel)
 		b.SaveServer(serv)
 	}
+}
+
+func itemDescription(item Item) string {
+	text := ""
+	if item.Chance < 20 {
+		text = "This item is rare. It must be worth a lot."
+	} else if item.Chance < 50 {
+		text = "This item is uncommon. You wonder where they got it..."
+	} else {
+		text = "This item is common. There's nothing special about it."
+	}
+	return text + " It has been added to your inventory."
 }
 
 func trickOrTreat() bool {
