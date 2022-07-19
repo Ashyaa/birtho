@@ -3,7 +3,9 @@ package bot
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	DG "github.com/bwmarrin/discordgo"
 )
@@ -155,27 +157,50 @@ func (b *Bot) getRank(usr string, serv Server, s *DG.Session) string {
 	return rankString(len(lb) + 1)
 }
 
+func wrap(in string, width int) (r1 string, r2 string) {
+	strs := strings.Split(in, " ")
+	r1, r2 = strs[0], ""
+	len := utf8.RuneCountInString
+	curLen := len(r1)
+	for _, s := range strs[1:] {
+		runeCount := len(s)
+		if curLen+runeCount+1 <= width {
+			r1 += " " + s
+			curLen += runeCount + 1
+		} else {
+			if len(r2) > 0 {
+				r2 += " "
+			}
+			r2 += s
+		}
+	}
+	return
+}
+
 func formatItemList(items []string) []string {
 	lines := [][2]string{}
-	maxCol1Width := 0
+	len := utf8.RuneCountInString
 	for idx, item := range items {
 		line := (idx/20)*10 + (idx % 10)
 		column := (idx / 10) % 2
 		if column == 0 {
 			lines = append(lines, [2]string{item, ""})
-			if len(item) > maxCol1Width {
-				maxCol1Width = len(item)
-			}
 		} else {
 			lines[line][1] = item
 		}
 	}
 
 	res := []string{}
-	col2Pos := maxCol1Width + 5
+	maxCol1Width := 26
+	col2Pos := maxCol1Width + 4
 	for _, words := range lines {
-		w1, w2 := words[0], words[1]
-		res = append(res, w1+padLeft(w2, col2Pos-len(w1)))
+		w1_1, w1_2 := wrap(words[0], maxCol1Width)
+		w2_1, w2_2 := wrap(words[1], maxCol1Width)
+		line := w1_1 + padLeft(w2_1, col2Pos-len(w1_1))
+		if len(w1_2) > 0 || len(w2_2) > 0 {
+			line += "\n" + w1_2 + padLeft(w2_2, col2Pos-len(w1_2))
+		}
+		res = append(res, line, "  ")
 	}
 	return res
 }
@@ -203,7 +228,7 @@ func Score(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
 		if dgUser, err := s.GuildMember(m.GuildID, usr); err == nil {
 			username = dgUser.Nick
 		}
-		menu := NewMenu(formatItemList(serv.Users[usr]), 10, channel, m.GuildID)
+		menu := NewMenu(formatItemList(serv.Users[usr]), 20, channel, m.GuildID)
 		menu.SetTitle(username + "'s scoreboard")
 		infos := fmt.Sprintf("Items: `%d/%d`", len(serv.Users[usr]), len(b.Items))
 		infos += "⁠ ⁠ ⁠ ⁠ ⁠ " + fmt.Sprintf("Points: `%d`", b.GetUserScore(usr, serv))
