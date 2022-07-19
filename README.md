@@ -13,6 +13,8 @@ Halloween "Trick or Treat"-like bot in Go
 - Command to reset the game
 - Command to configure the minimum and maximum cooldown for monster spawns
 - Command to configure how long a monster stays before leaving
+- Command to display the current server leaderboard
+- Command to display the score board of the current user
 
 ## Basic game features
 - The list of monsters and items the bot will use is read from a YAML configuration file, not provided in the repository (see YAML Configuration)
@@ -28,15 +30,11 @@ aacknowledged, it's a matter of who is the fastest to type the command.
 - The goal is to get all the items, the first player to do so is declared the winner
 
 # TODO
-## Scoreboard commands:
-- By user: list of missing items
-- For the whole server: score ranking for all players that have played (that have used trick or treat at least once)
-
 ## A `how to play` command
 - By DM
 - On the server itself
 
 ## Game
 - 15 monsters; 1pt for a common item, 5 for uncommon, 10 for rare (240 points total)
-- items spawns: 50% - 35% - 15%
-- Winner announcement (give a role to the winner?)
+- Items spawns: 50% - 35% - 15%
+- Winner announcement
