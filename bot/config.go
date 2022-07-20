@@ -25,11 +25,11 @@ func (r Range) Belongs(n int) bool {
 }
 
 type Item struct {
-	ID     string
+	ID     string  `json:"id,omitempty" yaml:"id,omitempty"`
 	Name   string  `json:"name" yaml:"name"`
 	Chance float64 `json:"chance" yaml:"chance"`
 	Points int     `json:"points" yaml:"points"`
-	Range  Range
+	Range  Range   `json:"range,omitempty" yaml:"range,omitempty"`
 }
 
 type Monster struct {
@@ -39,8 +39,8 @@ type Monster struct {
 	URL              string  `json:"url" yaml:"url"`
 	Chance           float64 `json:"chance" yaml:"chance"`
 	Items            []Item  `json:"items" yaml:"items"`
-	Range            Range
-	EqualItemChances bool
+	Range            Range   `json:"range,omitempty" yaml:"range,omitempty"`
+	EqualItemChances bool    `json:"equalchances,omitempty" yaml:"equalchances,omitempty"`
 }
 
 // Build the item data for the game. Returns false if a major error was encountered, else true.
