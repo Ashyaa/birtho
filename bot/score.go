@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-
-	DG "github.com/bwmarrin/discordgo"
 )
 
 func (b *Bot) GetUserScore(user string, serv Server) int {
@@ -89,11 +87,11 @@ func padLeft(s string, padding int) string {
 	return res
 }
 
-func (b *Bot) getLeaderBoard(serv Server, s *DG.Session) leaderboard {
+func (b *Bot) getLeaderBoard(serv Server) leaderboard {
 	lb := leaderboard{}
 	for usr := range serv.Users {
 		usrName := usr
-		dgUsr, err := s.GuildMember(serv.ID, usr)
+		dgUsr, err := b.s.GuildMember(serv.ID, usr)
 		if err == nil {
 			usrName = dgUsr.Nick
 		}
@@ -118,37 +116,23 @@ func (b *Bot) getLeaderBoard(serv Server, s *DG.Session) leaderboard {
 	return lb
 }
 
-func Leaderboard(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
-	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == b.UserID {
-			return
-		}
-		serv := b.GetServer(m.GuildID)
-		channel := m.ChannelID
-
-		_, ok := b.triggered(s, m, serv.Prefix, cmd)
-		if !ok {
-			return
-		}
-		b.Info("command %s triggered", cmd)
-
-		lb := b.getLeaderBoard(serv, s).Strings()
-		menu := NewMenu(lb[1:], 10, channel, m.GuildID)
-		menu.SetHeader(lb[0])
-		menu.SetTitle("Server leaderboard")
-		menu.SetSubtitle(fmt.Sprintf("Total number of points: `%d`", b.TotalPoints()))
-		err := menu.Send(s)
-		if err != nil {
-			b.Error("creating menu: %s", err.Error())
-			return
-		}
-		b.Menus[menu.ID()] = menu
-		time.AfterFunc(time.Duration(61)*time.Second, purgeMenus(b, s))
+func Leaderboard(b *Bot, p CommandParameters) {
+	lb := b.getLeaderBoard(p.S).Strings()
+	menu := NewMenu(lb[1:], 10, p.CID, p.GID)
+	menu.SetHeader(lb[0])
+	menu.SetTitle("Server leaderboard")
+	menu.SetSubtitle(fmt.Sprintf("Total number of points: `%d`", b.TotalPoints()))
+	err := menu.Send(b.s, p.I)
+	if err != nil {
+		b.Error("creating menu: %s", err.Error())
+		return
 	}
+	b.Menus[menu.ID()] = menu
+	time.AfterFunc(time.Duration(61)*time.Second, purgeMenus(b))
 }
 
-func (b *Bot) getRank(usr string, serv Server, s *DG.Session) string {
-	lb := b.getLeaderBoard(serv, s)
+func (b *Bot) getRank(usr string, serv Server) string {
+	lb := b.getLeaderBoard(serv)
 	for _, sb := range lb {
 		if sb.userID == usr {
 			return sb.rank
@@ -215,42 +199,27 @@ func formatItemList(items []string) []string {
 	return res
 }
 
-func Score(b *Bot, cmd string) func(*DG.Session, *DG.MessageCreate) {
-	return func(s *DG.Session, m *DG.MessageCreate) {
-		if m.Author.ID == b.UserID {
-			return
-		}
-		serv := b.GetServer(m.GuildID)
-		channel := m.ChannelID
-		usr := m.Author.ID
-
-		_, ok := b.triggered(s, m, serv.Prefix, cmd)
-		if !ok {
-			return
-		}
-		b.Info("command %s triggered", cmd)
-
-		if _, ok := serv.Users[usr]; !ok {
-			serv.Users[usr] = make([]string, 0)
-			b.SaveServer(serv)
-		}
-		username := usr
-		if dgUser, err := s.GuildMember(m.GuildID, usr); err == nil {
-			username = dgUser.Nick
-		}
-		itemList := b.getItemList(usr, serv)
-		menu := NewMenu(formatItemList(itemList), 20, channel, m.GuildID)
-		menu.SetTitle(username + "'s scoreboard")
-		infos := fmt.Sprintf("Items: `%d/%d`", len(serv.Users[usr]), len(b.Items))
-		infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Points: `%d`", b.GetUserScore(usr, serv))
-		infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Rank: `%s`", b.getRank(usr, serv, s))
-		menu.SetSubtitle(infos)
-		err := menu.Send(s)
-		if err != nil {
-			b.Error("creating menu: %s", err.Error())
-			return
-		}
-		b.Menus[menu.ID()] = menu
-		time.AfterFunc(time.Duration(61)*time.Second, purgeMenus(b, s))
+func Score(b *Bot, p CommandParameters) {
+	if _, ok := p.S.Users[p.UID]; !ok {
+		p.S.Users[p.UID] = make([]string, 0)
+		b.SaveServer(p.S)
 	}
+	username := p.UID
+	if dgUser, err := b.s.GuildMember(p.GID, p.UID); err == nil {
+		username = dgUser.Nick
+	}
+	itemList := b.getItemList(p.UID, p.S)
+	menu := NewMenu(formatItemList(itemList), 20, p.CID, p.GID)
+	menu.SetTitle(username + "'s scoreboard")
+	infos := fmt.Sprintf("Items: `%d/%d`", len(p.S.Users[p.UID]), len(b.Items))
+	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Points: `%d`", b.GetUserScore(p.UID, p.S))
+	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Rank: `%s`", b.getRank(p.UID, p.S))
+	menu.SetSubtitle(infos)
+	err := menu.Send(b.s, p.I)
+	if err != nil {
+		b.Error("creating menu: %s", err.Error())
+		return
+	}
+	b.Menus[menu.ID()] = menu
+	time.AfterFunc(time.Duration(61)*time.Second, purgeMenus(b))
 }

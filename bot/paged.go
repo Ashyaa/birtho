@@ -56,8 +56,8 @@ func (m *Menu) SetHeader(header string) {
 	m.header = header
 }
 
-func (m *Menu) Send(s *DG.Session) error {
-	msg, err := s.ChannelMessageSendEmbed(m.cID, m.render())
+func (m *Menu) Send(s *DG.Session, i *DG.Interaction) error {
+	msg, err := SendEmbed(s, i, m.cID, m.render())
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (m *Menu) NextPage(s *DG.Session) {
 	s.ChannelMessageEditComplex(edit)
 }
 
-func purgeMenus(b *Bot, s *DG.Session) func() {
+func purgeMenus(b *Bot) func() {
 	return func() {
 		toRemove := []string{}
 		now := time.Now().Local()
@@ -131,7 +131,7 @@ func purgeMenus(b *Bot, s *DG.Session) func() {
 		}
 		for _, ID := range toRemove {
 			if _, ok := b.Menus[ID]; ok {
-				s.MessageReactionsRemoveAll(b.Menus[ID].cID, b.Menus[ID].mID)
+				b.s.MessageReactionsRemoveAll(b.Menus[ID].cID, b.Menus[ID].mID)
 				delete(b.Menus, ID)
 			}
 		}

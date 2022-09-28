@@ -10,10 +10,14 @@ import (
 	LR "github.com/sirupsen/logrus"
 )
 
-const DefaultPrefix = "b!"
-const DefaultMinDelay = 120
-const DefaultVariableDelay = 781
-const DefaultStayTime = 5 * time.Second
+const (
+	DefaultPrefix        = "b!"
+	DefaultMinDelay      = 120
+	DefaultVariableDelay = 781
+	DefaultStayTime      = 5 * time.Second
+)
+
+var DefaultMemberPermissions int64 = DG.PermissionManageServer
 
 type MonsterSpawn struct {
 	ID      string
@@ -46,10 +50,9 @@ func (s Server) CanSpawn(cid string) bool {
 
 // Cooldown sets the server game on cooldown
 func (s *Server) Cooldown() {
-	minDelay := time.Duration(s.G.MinDelay) * time.Second
 	randomDelay := time.Duration(rand.Intn(s.G.VariableDelay)) * time.Second
-	s.G.NextSpawn = time.Now().Local().Add(minDelay) // Base cooldown of 2mn
-	s.G.NextSpawn = s.G.NextSpawn.Add(randomDelay)   // variable cooldown, up to 15mn total
+	s.G.NextSpawn = time.Now().Local().Add(s.G.MinDelay) // Base cooldown of 2mn
+	s.G.NextSpawn = s.G.NextSpawn.Add(randomDelay)       // variable cooldown, up to 15mn total
 }
 
 func (s Server) IsAdmin(uid string) bool {
@@ -61,7 +64,7 @@ func (s Server) IsAdmin(uid string) bool {
 }
 
 type Bot struct {
-	dg                  *DG.Session
+	s                   *DG.Session
 	db                  *storm.DB
 	Log                 LR.Logger
 	UserID              string
@@ -71,38 +74,164 @@ type Bot struct {
 	MonsterIds          []string
 	Menus               map[string]Menu
 	EqualMonsterChances bool
+	InteractionHandlers InteractionHandlers
+	Commands            []Command
 }
 
-type HandlerConstructor func(*Bot, string) func(*DG.Session, *DG.MessageCreate)
+type BotAction func(*Bot, CommandParameters)
 
 type Command struct {
-	Name        string
-	Constructor HandlerConstructor
+	Name          string
+	Action        BotAction
+	appCmd        *DG.ApplicationCommand
+	Options       Options
+	Admin         bool
+	AlwaysTrigger bool
 }
 
-var Commands = []Command{
+func (c Command) ID() string {
+	if c.appCmd == nil {
+		return ""
+	}
+	return c.appCmd.ID
+}
+
+var commandList = []Command{
 	// Administration commands
-	{"prefix", Prefix},
-	{"setprefix", SetPrefix},
-	{"setcd", SetCooldown},
-	{"setstay", SetStay},
-	{"addchan", AddChannel},
-	{"rmvchan", RemoveChannel},
-	{"addadmin", AddAdmin},
-	{"rmvadmin", RemoveAdmin},
-	{"admins", Admins},
-	{"chanlist", Channels},
-	{"info", Info},
-	{"play", Play},
-	{"reset", Reset},
-	{"give", GiveRandom},
+	{
+		Name:    "prefix",
+		Action:  Prefix,
+		appCmd:  &DG.ApplicationCommand{Description: "Display the bot prefix"},
+		Options: Options{},
+		Admin:   true,
+	},
+	{
+		Name:    "setprefix",
+		Action:  SetPrefix,
+		appCmd:  &DG.ApplicationCommand{Description: "Change the bot prefix"},
+		Options: Options{{"prefix", "new prefix to use", TypeString}},
+		Admin:   true,
+	},
+	{
+		Name:   "setcd",
+		Action: SetCooldown,
+		appCmd: &DG.ApplicationCommand{Description: "Change the spawn cooldown"},
+		Options: Options{
+			{"minimum", "minimum cooldown duration (in seconds)", TypeInteger},
+			{"maximum", "maximum cooldown duration (in seconds)", TypeInteger},
+		},
+		Admin: true,
+	},
+	{
+		Name:    "setstay",
+		Action:  SetStay,
+		appCmd:  &DG.ApplicationCommand{Description: "Change how long a monsters stays idle"},
+		Options: Options{{"duration", "duration in seconds", TypeInteger}},
+		Admin:   true,
+	},
+	{
+		Name:    "addchan",
+		Action:  AddChannel,
+		appCmd:  &DG.ApplicationCommand{Description: "Add a channel where monsters can spawn"},
+		Options: Options{{"channel", "channel to add", TypeChannel}},
+		Admin:   true,
+	},
+	{
+		Name:    "rmvchan",
+		Action:  RemoveChannel,
+		appCmd:  &DG.ApplicationCommand{Description: "Remove a channel where monsters can spawn"},
+		Options: Options{{"channel", "channel to remove", TypeChannel}},
+		Admin:   true,
+	},
+	{
+		Name:    "chanlist",
+		Action:  Channels,
+		appCmd:  &DG.ApplicationCommand{Description: "Display the list of channels where monsters can spawn"},
+		Options: Options{},
+		Admin:   true,
+	},
+	{
+		Name:    "addadmin",
+		Action:  AddAdmin,
+		appCmd:  &DG.ApplicationCommand{Description: "Add a bot administrator"},
+		Options: Options{{"user", "user that shall be an administrator", TypeUser}},
+		Admin:   true,
+	},
+	{
+		Name:    "rmvadmin",
+		Action:  RemoveAdmin,
+		appCmd:  &DG.ApplicationCommand{Description: "Remove a bot administrator"},
+		Options: Options{{"user", "user that be removed from the administrators list", TypeUser}},
+		Admin:   true,
+	},
+	{
+		Name:    "admins",
+		Action:  Admins,
+		appCmd:  &DG.ApplicationCommand{Description: "Display the list of bot administrators"},
+		Options: Options{},
+		Admin:   true,
+	},
+	{
+		Name:    "info",
+		Action:  Info,
+		appCmd:  &DG.ApplicationCommand{Description: "Information about the bot configuration"},
+		Options: Options{},
+		Admin:   true,
+	},
+	{
+		Name:    "play",
+		Action:  Play,
+		appCmd:  &DG.ApplicationCommand{Description: "Start or stop the game"},
+		Options: Options{{"state", "game status: \"on\" or \"off\"", TypeString}},
+		Admin:   true,
+	},
+	{
+		Name:    "reset",
+		Action:  Reset,
+		appCmd:  &DG.ApplicationCommand{Description: "Reset the game for all users in the server"},
+		Options: Options{},
+		Admin:   true,
+	},
+	{
+		Name:    "give",
+		Action:  GiveRandom,
+		appCmd:  &DG.ApplicationCommand{Description: "Give a random item (for testing purposes)"},
+		Options: Options{},
+		Admin:   true,
+	},
 
 	// Game commands
-	{"spawn", Spawn},
-	{"trick", Grab},
-	{"treat", Grab},
+	{
+		Name:          "spawn",
+		Action:        Spawn,
+		appCmd:        &DG.ApplicationCommand{Description: "Forces a random monster to appear (for testing purposes)"},
+		Options:       Options{},
+		AlwaysTrigger: true,
+	},
+	{
+		Name:    "trick",
+		Action:  Grab,
+		Options: Options{},
+	},
+	{
+		Name:    "treat",
+		Action:  Grab,
+		Options: Options{},
+	},
 
 	// Score commands
-	{"leaderboard", Leaderboard},
-	{"score", Score},
+	{
+		Name:    "leaderboard",
+		Action:  Leaderboard,
+		appCmd:  &DG.ApplicationCommand{Description: "Show the server leaderboard"},
+		Options: Options{},
+	},
+	{
+		Name:    "score",
+		Action:  Score,
+		appCmd:  &DG.ApplicationCommand{Description: "Get your scoreboard"},
+		Options: Options{},
+	},
 }
+
+type InteractionHandlers map[string]func(*DG.Session, *DG.InteractionCreate)

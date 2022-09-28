@@ -18,10 +18,15 @@ func New(log LR.Logger) (*Bot, error) {
 		return nil, err
 	}
 
-	res := Bot{Log: log, Items: make(map[string]Item)}
+	res := Bot{
+		Log:                 log,
+		Items:               make(map[string]Item),
+		InteractionHandlers: make(InteractionHandlers),
+		Commands:            make([]Command, 0),
+	}
 	res.buildGameData(conf)
 
-	res.dg, err = DG.New("Bot " + conf.Token)
+	res.s, err = DG.New("Bot " + conf.Token)
 	if err != nil {
 		log.Error("error creating session: ", err)
 		return nil, err
@@ -30,32 +35,49 @@ func New(log LR.Logger) (*Bot, error) {
 	// Open the database
 	res.OpenDB()
 
-	// Install command handlers
-	res.SetupCommands()
-
 	// Provide a seed for the pseudo-random number generator
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	res.dg.Identify.Intents = DG.IntentsGuildMessages | DG.IntentGuildMessageReactions
+	res.s.Identify.Intents = DG.IntentsGuildMessages | DG.IntentGuildMessageReactions
 
 	// Open a websocket connection to Discord and begin listening.
-	err = res.dg.Open()
+	err = res.s.Open()
 	if err != nil {
 		res.ErrorE(err, "error opening connection")
 		return nil, err
 	}
-	res.UserID = res.dg.State.User.ID
+	res.UserID = res.s.State.User.ID
 	res.Menus = make(map[string]Menu)
 	res.Mention = U.BuildUserTag(res.UserID)
+
+	// Install command handlers
+	res.SetupCommands()
 
 	return &res, nil
 }
 
 func (b *Bot) SetupCommands() {
-	for _, cmd := range Commands {
-		b.dg.AddHandler(cmd.Constructor(b, cmd.Name))
+	b.Commands = append(b.Commands, commandList...)
+	buildOptions(b)
+	b.buildInteractionHandlers()
+	b.s.AddHandler(func(s *DG.Session, i *DG.InteractionCreate) {
+		if h, ok := b.InteractionHandlers[i.ApplicationCommandData().Name]; ok {
+			h(s, i)
+		}
+	})
+	for _, cmd := range b.Commands {
+		b.s.AddHandler(HandlerFromMessageCreate(b, cmd))
+		if cmd.appCmd != nil {
+			cmd.appCmd.Name = cmd.Name
+			_, err := b.s.ApplicationCommandCreate(b.UserID, "", cmd.appCmd)
+			if err != nil {
+				b.Fatal("cannot create '%s' command: %v", cmd.Name, err)
+			}
+		}
+		b.Info("command \"%s\" setup", cmd.Name)
 	}
-	b.dg.AddHandler(PageReact(b))
+	b.s.AddHandler(PageReact(b))
+	b.Info("all commands have been setup")
 }
 
 func (b *Bot) Stop() {
@@ -64,6 +86,20 @@ func (b *Bot) Stop() {
 	if err != nil {
 		b.ErrorE(err, "closing database")
 	}
+
+	registeredCommands, err := b.s.ApplicationCommands(b.UserID, "")
+	if err != nil {
+		b.Fatal("could not fetch registered commands: %v", err)
+	}
+	for _, v := range registeredCommands {
+		err := b.s.ApplicationCommandDelete(b.UserID, "", v.ID)
+		if err != nil {
+			b.Fatal("cannot delete '%v' command: %v", v.Name, err)
+		}
+		b.Info("command \"%s\" deleted", v.Name)
+	}
+	b.Info("un-registered all commands")
+	b.s.Close()
 }
 
 // Returns true and the command content if the message triggers the command, else false and an empty string

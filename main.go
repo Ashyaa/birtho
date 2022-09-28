@@ -7,15 +7,24 @@ import (
 
 	"github.com/ashyaa/birtho/bot"
 	"github.com/ashyaa/birtho/log"
+	"github.com/sirupsen/logrus"
 )
 
-func main() {
-	logger := log.New()
-	b, err := bot.New(logger)
+var (
+	logger logrus.Logger
+	b      *bot.Bot
+)
+
+func init() {
+	var err error
+	logger = log.New()
+	b, err = bot.New(logger)
 	if err != nil {
 		return
 	}
+}
 
+func main() {
 	// Wait here until CTRL-C or other term signal is received.
 	logger.Info("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
