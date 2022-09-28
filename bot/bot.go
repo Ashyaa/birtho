@@ -65,9 +65,17 @@ func (b *Bot) SetupCommands() {
 			h(s, i)
 		}
 	})
+	dgCmds, err := b.s.ApplicationCommands(b.UserID, "")
+	if err != nil {
+		dgCmds = make([]*DG.ApplicationCommand, 0)
+	}
+	existingCommands := []string{}
+	for _, c := range dgCmds {
+		existingCommands = U.AppendUnique(existingCommands, c.Name)
+	}
 	for _, cmd := range b.Commands {
 		b.s.AddHandler(HandlerFromMessageCreate(b, cmd))
-		if cmd.appCmd != nil {
+		if cmd.appCmd != nil && !U.Contains(existingCommands, cmd.Name) {
 			cmd.appCmd.Name = cmd.Name
 			_, err := b.s.ApplicationCommandCreate(b.UserID, "", cmd.appCmd)
 			if err != nil {
@@ -86,20 +94,8 @@ func (b *Bot) Stop() {
 	if err != nil {
 		b.ErrorE(err, "closing database")
 	}
-
-	registeredCommands, err := b.s.ApplicationCommands(b.UserID, "")
-	if err != nil {
-		b.Fatal("could not fetch registered commands: %v", err)
-	}
-	for _, v := range registeredCommands {
-		err := b.s.ApplicationCommandDelete(b.UserID, "", v.ID)
-		if err != nil {
-			b.Fatal("cannot delete '%v' command: %v", v.Name, err)
-		}
-		b.Info("command \"%s\" deleted", v.Name)
-	}
-	b.Info("un-registered all commands")
 	b.s.Close()
+	b.Info("gracefully shutting down")
 }
 
 // Returns true and the command content if the message triggers the command, else false and an empty string
