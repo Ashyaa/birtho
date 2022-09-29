@@ -43,7 +43,7 @@ func SendEmbed(s *DG.Session, i *DG.Interaction, channelID string, embed *DG.Mes
 func buildOptions(b *Bot) {
 	for i := range b.Commands {
 		if b.Commands[i].appCmd != nil {
-			if b.Commands[i].Admin {
+			if b.Commands[i].Admin || b.Commands[i].AlwaysTrigger {
 				b.Commands[i].appCmd.DefaultMemberPermissions = &DefaultMemberPermissions
 			}
 			b.Commands[i].appCmd.Options = b.Commands[i].DGOptions(b)
