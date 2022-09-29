@@ -51,9 +51,11 @@ func Play(b *Bot, p CommandParameters) {
 
 func Reset(b *Bot, p CommandParameters) {
 	p.S.Users = make(map[string][]string)
+	p.S.G.Finished = false
+	p.S.G.Winner = ""
 	b.SaveServer(p.S)
 
-	msg := "Cleared all players' item list"
+	msg := "Cleared all players' item list and reset the game status!"
 	SendText(b.s, p.I, p.CID, msg)
 }
 
@@ -99,6 +101,8 @@ func Spawn(b *Bot, p CommandParameters) {
 	})
 }
 
+const winningMessage = "Congratulations %s! You gathered all items and became the one true Spooky Lord!"
+
 func Grab(b *Bot, p CommandParameters) {
 	channel := p.CID
 	if !U.Contains(p.S.Channels, channel) {
@@ -126,6 +130,11 @@ func Grab(b *Bot, p CommandParameters) {
 			SetFooter(itemDescription(item)).
 			SetImage(monster.URL).MessageEmbed)
 		p.S.Users[p.UID] = U.AppendUnique(p.S.Users[p.UID], item.ID)
+		if !p.S.G.Finished && b.GetUserScore(p.UID, p.S) == b.TotalPoints() {
+			p.S.G.Finished = true
+			p.S.G.Winner = p.UID
+			SendText(b.s, p.I, p.CID, fmt.Sprintf(winningMessage, U.BuildUserTag(p.UID)))
+		}
 	} else {
 		monster := b.Monsters[spawn.ID]
 		text := fmt.Sprintf("%s scared **%s** away...", U.BuildUserTag(p.UID), monster.Name)

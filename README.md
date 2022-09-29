@@ -30,8 +30,3 @@ aacknowledged, it's a matter of who is the fastest to type the command.
 - The goal is to get all the items, the first player to do so is declared the winner
 - 15 monsters :with 3 items: 1pt for a common item, 5 for uncommon, 10 for rare (240 points total)
 - Items drop rate: 50% (common) - 35% (uncommon) - 15% (rare)
-
-# TODO
-
-## Game
-- Winner announcement

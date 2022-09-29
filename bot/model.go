@@ -31,6 +31,8 @@ type Game struct {
 	MinDelay      time.Duration
 	StayTime      time.Duration
 	VariableDelay int
+	Finished      bool
+	Winner        string
 }
 
 type Server struct {
