@@ -99,7 +99,7 @@ func (m *Menu) render() *DG.MessageEmbed {
 	}
 	if len(m.L) != 0 {
 		data := append([]string{m.header}, m.L[minIndex:maxIndex]...)
-		text = "```\n" + strings.Join(data, "\n") + "\n```"
+		text += "```\n" + strings.Join(data, "\n") + "\n```"
 	}
 	return embed.NewEmbed().
 		SetTitle(m.title).
