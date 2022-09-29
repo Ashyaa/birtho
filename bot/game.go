@@ -184,14 +184,14 @@ func GiveRandom(b *Bot, p CommandParameters) {
 const (
 	// Help texts
 	description = "This bot is a game similar to the Halloween bot that Discord made available in Halloween 2020. Spooky stuff ahead!"
-	howToPlay   = "When speaking in %s, spooky visitors may appear. Try to get their attention them by using the %strick or %streat commands! " +
+	howToPlay   = "When speaking in %s, spooky visitors may appear. Try to get their attention them by using the `%strick` or `%streat` commands! " +
 		"Only the fastest person will get the chance to please them, and if pleased, they will rewards you with an item. " +
 		"The first person to get all the items wiill be declared the winner!"
 	visitorsAndItems = "Different kinds of visitors may appear, and each one of them may reward you with three different items. " +
 		"Some items are more common than others. Rare items are worth more points."
 	scoring = "See your score, rank in the leaderboard and current list of items with the `%sscore` command, or the `/score` slash command!\n" +
 		"See the server leaderboard with the `%sleaderboard` command, or the `/leaderboard` slash command!"
-	help   = "You can display this help message at any time `%s` command, or the `/help` slash command."
+	help   = "You can display this help message at any time wit the `%shelp` command, or the `/help` slash command."
 	footer = "Developped by Ashyaa. Art by AcidFiend,  BirthofVns, Ella, N1MH and Talondal."
 )
 
