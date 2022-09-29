@@ -67,12 +67,18 @@ func Spawn(b *Bot, p CommandParameters) {
 
 	monster := b.RandomMonster()
 	spawn := MonsterSpawn{
-		ID: strconv.Itoa(monster.ID),
+		ID:       strconv.Itoa(monster.ID),
+		Expected: "trick",
 	}
+
+	if trickOrTreat() {
+		spawn.Expected = "treat"
+	}
+	command := p.S.Prefix + spawn.Expected
 
 	msg, err := SendEmbed(b.s, p.I, p.CID, embed.NewEmbed().
 		SetTitle("A visitor has come!").
-		SetDescription(fmt.Sprintf("**%s** appeared!", monster.Name)).
+		SetDescription(fmt.Sprintf("**%s** appeared! Greet them with `%s`!", monster.Name, command)).
 		SetColor(0x00FF00).
 		SetImage(monster.URL).MessageEmbed)
 	if err != nil {
@@ -118,7 +124,7 @@ func Grab(b *Bot, p CommandParameters) {
 		p.S.Users[p.UID] = make([]string, 0)
 	}
 
-	if trickOrTreat() {
+	if p.Name == spawn.Expected {
 		monster := b.Monsters[spawn.ID]
 		item := monster.RandomItem(b.Log)
 		text := fmt.Sprintf("As a thank you for your kindness, **%s** gives %s one **%s**",

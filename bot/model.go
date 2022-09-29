@@ -20,8 +20,9 @@ const (
 var DefaultMemberPermissions int64 = DG.PermissionManageServer
 
 type MonsterSpawn struct {
-	ID      string
-	Message string
+	ID       string
+	Message  string
+	Expected string
 }
 
 type Game struct {
