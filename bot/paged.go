@@ -32,6 +32,9 @@ func NewMenu(list []string, size int, cID, gID string) Menu {
 	if len(list)%size > 0 {
 		maxPage += 1
 	}
+	if maxPage == 0 {
+		maxPage = 1
+	}
 	res := Menu{
 		L:       list,
 		page:    1,
@@ -90,10 +93,13 @@ func (m *Menu) render() *DG.MessageEmbed {
 	if maxIndex > len(m.L) {
 		maxIndex = len(m.L)
 	}
-	data := append([]string{m.header}, m.L[minIndex:maxIndex]...)
-	text := "```\n" + strings.Join(data, "\n") + "\n```"
+	text := ""
 	if m.subtitle != "" {
-		text = m.subtitle + "\n" + text
+		text = m.subtitle + "\n"
+	}
+	if len(m.L) != 0 {
+		data := append([]string{m.header}, m.L[minIndex:maxIndex]...)
+		text = "```\n" + strings.Join(data, "\n") + "\n```"
 	}
 	return embed.NewEmbed().
 		SetTitle(m.title).

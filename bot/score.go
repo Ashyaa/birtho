@@ -93,7 +93,11 @@ func (b *Bot) getLeaderBoard(serv Server) leaderboard {
 		usrName := usr
 		dgUsr, err := b.s.GuildMember(serv.ID, usr)
 		if err == nil {
-			usrName = dgUsr.Nick
+			if dgUsr.Nick != "" {
+				usrName = dgUsr.Nick
+			} else {
+				usrName = dgUsr.User.Username
+			}
 		}
 		lb = append(lb, scoreboard{usr, usrName, b.GetUserScore(usr, serv), ""})
 	}
@@ -204,9 +208,13 @@ func Score(b *Bot, p CommandParameters) {
 		p.S.Users[p.UID] = make([]string, 0)
 		b.SaveServer(p.S)
 	}
-	username := p.UID
+	var username string
 	if dgUser, err := b.s.GuildMember(p.GID, p.UID); err == nil {
-		username = dgUser.Nick
+		if dgUser.Nick != "" {
+			username = dgUser.Nick
+		} else {
+			username = dgUser.User.Username
+		}
 	}
 	itemList := b.getItemList(p.UID, p.S)
 	menu := NewMenu(formatItemList(itemList), 20, p.CID, p.GID)
