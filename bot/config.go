@@ -2,7 +2,7 @@ package bot
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -106,7 +106,7 @@ func ReadConfig(log LR.Logger) (Config, error) {
 	}
 	defer rawFile.Close()
 
-	bytes, _ := ioutil.ReadAll(rawFile)
+	bytes, _ := io.ReadAll(rawFile)
 	var conf Config
 	err = yaml.Unmarshal(bytes, &conf)
 	if err != nil {
@@ -157,6 +157,6 @@ func (c *Config) init(log LR.Logger) {
 		if err != nil {
 			return
 		}
-		ioutil.WriteFile(c.filepath, file, 0644)
+		os.WriteFile(c.filepath, file, 0644)
 	}
 }
