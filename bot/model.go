@@ -232,6 +232,14 @@ var commandList = []Command{
 		appCmd:  &DG.ApplicationCommand{Description: "Get your scoreboard"},
 		Options: Options{},
 	},
+
+	// Help command
+	{
+		Name:    "help",
+		Action:  Help,
+		appCmd:  &DG.ApplicationCommand{Description: "Information about the bot and how to play the game"},
+		Options: Options{},
+	},
 }
 
 type InteractionHandlers map[string]func(*DG.Session, *DG.InteractionCreate)

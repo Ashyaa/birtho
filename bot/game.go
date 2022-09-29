@@ -171,3 +171,50 @@ func GiveRandom(b *Bot, p CommandParameters) {
 	msg := fmt.Sprintf("Gave you one `%s`", b.Items[item].Name)
 	SendText(b.s, p.I, p.CID, msg)
 }
+
+const (
+	// Help texts
+	description = "This bot is a game similar to the Halloween bot that Discord made available in Halloween 2020. Spooky stuff ahead!"
+	howToPlay   = "When speaking in %s, spooky visitors may appear. Try to get their attention them by using the %strick or %streat commands! " +
+		"Only the fastest person will get the chance to please them, and if pleased, they will rewards you with an item. " +
+		"The first person to get all the items wiill be declared the winner!"
+	visitorsAndItems = "Different kinds of visitors may appear, and each one of them may reward you with three different items. " +
+		"Some items are more common than others. Rare items are worth more points."
+	scoring = "See your score, rank in the leaderboard and current list of items with the `%sscore` command, or the `/score` slash command!\n" +
+		"See the server leaderboard with the `%sleaderboard` command, or the `/leaderboard` slash command!"
+	help   = "You can display this help message at any time `%s` command, or the `/help` slash command."
+	footer = "Developped by Ashyaa. Art by AcidFiend, Ella, N1MH, Talondal and BirthofVns."
+)
+
+func Help(b *Bot, p CommandParameters) {
+	// Create new embed message
+	msg := embed.NewEmbed().SetTitle("Help").SetColor(0x008080)
+	msg.AddField("What is this bot?", description)
+
+	msg.AddField("How to play?", fmt.Sprintf(howToPlay, listChannels(p.S.Channels), p.S.Prefix, p.S.Prefix))
+
+	msg.AddField("Visitors and items", visitorsAndItems)
+
+	msg.AddField("Scoreboard and server leaderboard", fmt.Sprintf(scoring, p.S.Prefix, p.S.Prefix))
+
+	msg.AddField("Help", fmt.Sprintf(help, p.S.Prefix))
+
+	msg.SetFooter(footer)
+
+	SendEmbed(b.s, p.I, p.CID, msg.MessageEmbed)
+}
+
+func listChannels(channels []string) string {
+	if len(channels) == 0 {
+		return "any channel"
+	}
+	if len(channels) == 1 {
+		return U.BuildChannelTag(channels[0])
+	}
+	last := channels[len(channels)-1]
+	list := []string{}
+	for _, c := range channels[:len(channels)-1] {
+		list = append(list, U.BuildChannelTag(c))
+	}
+	return strings.Join(list, ", ") + " and " + U.BuildChannelTag(last)
+}

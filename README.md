@@ -28,13 +28,10 @@ aacknowledged, it's a matter of who is the fastest to type the command.
 - Whether or not it was grabbed by a user, a delay is put in place before another item appears
 - The bot keeps in memory which items were grabbed by each user; repeats do not count
 - The goal is to get all the items, the first player to do so is declared the winner
+- 15 monsters :with 3 items: 1pt for a common item, 5 for uncommon, 10 for rare (240 points total)
+- Items drop rate: 50% (common) - 35% (uncommon) - 15% (rare)
 
 # TODO
-## A `how to play` command
-- By DM
-- On the server itself
 
 ## Game
-- 15 monsters; 1pt for a common item, 5 for uncommon, 10 for rare (240 points total)
-- Items spawns: 50% - 35% - 15%
 - Winner announcement
