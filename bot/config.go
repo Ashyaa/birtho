@@ -35,6 +35,7 @@ type Item struct {
 type Monster struct {
 	ID               int     `json:"id" yaml:"id"`
 	Name             string  `json:"name" yaml:"name"`
+	Artist           string  `json:"artist" yaml:"artist"`
 	Path             string  `json:"path" yaml:"path"`
 	URL              string  `json:"url" yaml:"url"`
 	Chance           float64 `json:"chance" yaml:"chance"`

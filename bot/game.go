@@ -80,6 +80,7 @@ func Spawn(b *Bot, p CommandParameters) {
 		SetTitle("A visitor has come!").
 		SetDescription(fmt.Sprintf("**%s** appeared! Greet them with `%s`!", monster.Name, command)).
 		SetColor(0x00FF00).
+		SetFooter(fmt.Sprintf("Art by %s.", monster.Artist)).
 		SetImage(monster.URL).MessageEmbed)
 	if err != nil {
 		b.ErrorE(err, "spawn message")
@@ -129,11 +130,12 @@ func Grab(b *Bot, p CommandParameters) {
 		item := monster.RandomItem(b.Log)
 		text := fmt.Sprintf("As a thank you for your kindness, **%s** gives %s one **%s**",
 			monster.Name, U.BuildUserTag(p.UID), item.Name)
+		footer := itemDescription(item) + "\n" + fmt.Sprintf("Art by %s.", monster.Artist)
 		b.s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
 			SetTitle("The visitor has been pleased!").
 			SetDescription(text).
 			SetColor(0xFFFFFF).
-			SetFooter(itemDescription(item)).
+			SetFooter(footer).
 			SetImage(monster.URL).MessageEmbed)
 		p.S.Users[p.UID] = U.AppendUnique(p.S.Users[p.UID], item.ID)
 		if !p.S.G.Finished && b.GetUserScore(p.UID, p.S) == b.TotalPoints() {
