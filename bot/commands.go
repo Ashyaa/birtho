@@ -203,7 +203,9 @@ func HandlerFromInteraction(b *Bot, cmd Command) func(*DG.Session, *DG.Interacti
 			SendText(s, nil, p.CID, err.Error())
 			return
 		}
-		b.Info("command %s triggered", cmd.Name)
+		if !cmd.AlwaysTrigger {
+			b.Info("command %s triggered", cmd.Name)
+		}
 		cmd.Action(b, p)
 	}
 }
