@@ -100,6 +100,47 @@ func (c Command) ID() string {
 }
 
 var commandList = []Command{
+	// Game commands
+	{
+		Name:    "trick",
+		Action:  Grab,
+		Options: Options{},
+	},
+	{
+		Name:    "treat",
+		Action:  Grab,
+		Options: Options{},
+	},
+	{
+		Name:          "spawn",
+		Action:        Spawn,
+		appCmd:        &DG.ApplicationCommand{Description: "Forces a random monster to appear (for testing purposes)"},
+		Options:       Options{},
+		AlwaysTrigger: true,
+	},
+
+	// Score commands
+	{
+		Name:    "leaderboard",
+		Action:  Leaderboard,
+		appCmd:  &DG.ApplicationCommand{Description: "Show the server leaderboard"},
+		Options: Options{},
+	},
+	{
+		Name:    "score",
+		Action:  Score,
+		appCmd:  &DG.ApplicationCommand{Description: "Get your scoreboard"},
+		Options: Options{},
+	},
+
+	// Help command
+	{
+		Name:    "help",
+		Action:  Help,
+		appCmd:  &DG.ApplicationCommand{Description: "Information about the bot and how to play the game"},
+		Options: Options{},
+	},
+
 	// Administration commands
 	{
 		Name:    "prefix",
@@ -201,47 +242,6 @@ var commandList = []Command{
 		appCmd:  &DG.ApplicationCommand{Description: "Give a random item (for testing purposes)"},
 		Options: Options{},
 		Admin:   true,
-	},
-
-	// Game commands
-	{
-		Name:          "spawn",
-		Action:        Spawn,
-		appCmd:        &DG.ApplicationCommand{Description: "Forces a random monster to appear (for testing purposes)"},
-		Options:       Options{},
-		AlwaysTrigger: true,
-	},
-	{
-		Name:    "trick",
-		Action:  Grab,
-		Options: Options{},
-	},
-	{
-		Name:    "treat",
-		Action:  Grab,
-		Options: Options{},
-	},
-
-	// Score commands
-	{
-		Name:    "leaderboard",
-		Action:  Leaderboard,
-		appCmd:  &DG.ApplicationCommand{Description: "Show the server leaderboard"},
-		Options: Options{},
-	},
-	{
-		Name:    "score",
-		Action:  Score,
-		appCmd:  &DG.ApplicationCommand{Description: "Get your scoreboard"},
-		Options: Options{},
-	},
-
-	// Help command
-	{
-		Name:    "help",
-		Action:  Help,
-		appCmd:  &DG.ApplicationCommand{Description: "Information about the bot and how to play the game"},
-		Options: Options{},
 	},
 }
 
