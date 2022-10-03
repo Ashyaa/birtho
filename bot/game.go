@@ -64,6 +64,7 @@ func Spawn(b *Bot, p CommandParameters) {
 	if !p.S.CanSpawn(p.CID) && !isManualCommand {
 		return
 	}
+	b.Info("command %s triggered", p.Name)
 
 	monster := b.RandomMonster()
 	spawn := MonsterSpawn{
