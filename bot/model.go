@@ -2,6 +2,7 @@ package bot
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/asdine/storm/v3"
@@ -79,6 +80,7 @@ type Bot struct {
 	EqualMonsterChances bool
 	InteractionHandlers InteractionHandlers
 	Commands            []Command
+	mutex               sync.Mutex
 }
 
 type BotAction func(*Bot, CommandParameters)

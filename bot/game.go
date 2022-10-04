@@ -94,8 +94,10 @@ func Spawn(b *Bot, p CommandParameters) {
 
 	time.AfterFunc(p.S.G.StayTime, func() {
 		curServ := b.GetServer(p.GID)
-		_, ok := curServ.G.Monsters[p.CID]
-		if !ok {
+		spawn, ok := curServ.G.Monsters[p.CID]
+		b.Info("spawn message: %s", spawn.Message)
+		b.Info("actual message: %s", msg.ID)
+		if !ok || spawn.Message != msg.ID {
 			return
 		}
 		delete(curServ.G.Monsters, p.CID)
@@ -117,13 +119,18 @@ func Grab(b *Bot, p CommandParameters) {
 		return
 	}
 
-	spawn, ok := p.S.G.Monsters[channel]
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+
+	serv := b.GetServer(p.GID)
+
+	spawn, ok := serv.G.Monsters[channel]
 	if !ok {
 		return
 	}
 
-	if _, ok = p.S.Users[p.UID]; !ok {
-		p.S.Users[p.UID] = make([]string, 0)
+	if _, ok = serv.Users[p.UID]; !ok {
+		serv.Users[p.UID] = make([]string, 0)
 	}
 
 	if p.Name == spawn.Expected {
@@ -131,7 +138,7 @@ func Grab(b *Bot, p CommandParameters) {
 		item := monster.RandomItem(b.Log)
 		text := fmt.Sprintf("As a thank you for your kindness, **%s** gives %s one **%s**",
 			monster.Name, U.BuildUserTag(p.UID), item.Name)
-		duplicate := U.Contains(p.S.Users[p.UID], item.ID)
+		duplicate := U.Contains(serv.Users[p.UID], item.ID)
 		footer := itemDescription(item, duplicate) + "\n" + fmt.Sprintf("Art by %s.", monster.Artist)
 		b.s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
 			SetTitle("The visitor has been pleased!").
@@ -140,10 +147,10 @@ func Grab(b *Bot, p CommandParameters) {
 			SetFooter(footer).
 			SetImage(monster.URL).MessageEmbed)
 		b.s.MessageReactionAdd(p.CID, p.MID, "✅")
-		p.S.Users[p.UID] = U.AppendUnique(p.S.Users[p.UID], item.ID)
-		if !p.S.G.Finished && b.GetUserScore(p.UID, p.S) == b.TotalPoints() {
-			p.S.G.Finished = true
-			p.S.G.Winner = p.UID
+		serv.Users[p.UID] = U.AppendUnique(serv.Users[p.UID], item.ID)
+		if !serv.G.Finished && b.GetUserScore(p.UID, serv) == b.TotalPoints() {
+			serv.G.Finished = true
+			serv.G.Winner = p.UID
 			SendText(b.s, p.I, p.CID, fmt.Sprintf(winningMessage, U.BuildUserTag(p.UID)))
 		}
 	} else {
@@ -155,8 +162,8 @@ func Grab(b *Bot, p CommandParameters) {
 			SetColor(0xFF0000).MessageEmbed)
 		b.s.MessageReactionAdd(p.CID, p.MID, "❌")
 	}
-	delete(p.S.G.Monsters, channel)
-	b.SaveServer(p.S)
+	delete(serv.G.Monsters, channel)
+	b.SaveServer(serv)
 }
 
 func itemDescription(item Item, duplicate bool) string {
