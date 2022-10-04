@@ -20,7 +20,7 @@ func init() {
 	logger = log.New()
 	b, err = bot.New(logger)
 	if err != nil {
-		return
+		panic(err)
 	}
 }
 

@@ -89,18 +89,35 @@ func padLeft(s string, padding int) string {
 
 func (b *Bot) getLeaderBoard(serv Server) leaderboard {
 	lb := leaderboard{}
-	for usr := range serv.Users {
-		usrName := usr
-		dgUsr, err := b.s.GuildMember(serv.ID, usr)
-		if err == nil {
-			if dgUsr.Nick != "" {
-				usrName = dgUsr.Nick
-			} else {
-				usrName = dgUsr.User.Username
+	users := serv.Users
+	members, err := b.s.GuildMembers(serv.ID, "", 1000)
+	if err != nil {
+		b.ErrorE(err, "fetching guild members")
+		for usr := range users {
+			usrName := usr
+			dgUsr, err := b.s.GuildMember(serv.ID, usr)
+			if err == nil {
+				if dgUsr.Nick != "" {
+					usrName = dgUsr.Nick
+				} else {
+					usrName = dgUsr.User.Username
+				}
 			}
+			lb = append(lb, scoreboard{usr, usrName, b.GetUserScore(usr, serv), ""})
 		}
-		lb = append(lb, scoreboard{usr, usrName, b.GetUserScore(usr, serv), ""})
+	} else {
+		for _, member := range members {
+			if _, ok := users[member.User.ID]; !ok {
+				continue
+			}
+			usrName := member.User.Username
+			if member.Nick != "" {
+				usrName = member.Nick
+			}
+			lb = append(lb, scoreboard{member.User.ID, usrName, b.GetUserScore(member.User.ID, serv), ""})
+		}
 	}
+
 	sort.Slice(lb, func(i, j int) bool {
 		return lb[i].score > lb[j].score
 	})

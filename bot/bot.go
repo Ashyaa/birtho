@@ -38,7 +38,7 @@ func New(log LR.Logger) (*Bot, error) {
 	// Provide a seed for the pseudo-random number generator
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	res.s.Identify.Intents = DG.IntentsGuildMessages | DG.IntentGuildMessageReactions
+	res.s.Identify.Intents = DG.IntentsGuildMessages | DG.IntentGuildMessageReactions | DG.IntentGuildMembers
 
 	// Open a websocket connection to Discord and begin listening.
 	err = res.s.Open()
