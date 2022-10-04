@@ -131,7 +131,8 @@ func Grab(b *Bot, p CommandParameters) {
 		item := monster.RandomItem(b.Log)
 		text := fmt.Sprintf("As a thank you for your kindness, **%s** gives %s one **%s**",
 			monster.Name, U.BuildUserTag(p.UID), item.Name)
-		footer := itemDescription(item) + "\n" + fmt.Sprintf("Art by %s.", monster.Artist)
+		duplicate := U.Contains(p.S.Users[p.UID], item.ID)
+		footer := itemDescription(item, duplicate) + "\n" + fmt.Sprintf("Art by %s.", monster.Artist)
 		b.s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
 			SetTitle("The visitor has been pleased!").
 			SetDescription(text).
@@ -158,7 +159,7 @@ func Grab(b *Bot, p CommandParameters) {
 	b.SaveServer(p.S)
 }
 
-func itemDescription(item Item) string {
+func itemDescription(item Item, duplicate bool) string {
 	text := ""
 	if item.Chance < 20 {
 		text = "This item is rare. It must be worth a lot."
@@ -166,6 +167,9 @@ func itemDescription(item Item) string {
 		text = "This item is uncommon. You wonder where they got it..."
 	} else {
 		text = "This item is common. There's nothing special about it."
+	}
+	if duplicate {
+		return text + " Sadly, you already had one..."
 	}
 	return text + " It has been added to your inventory."
 }
