@@ -61,11 +61,11 @@ func (b *Bot) buildInteractionHandlers() {
 }
 
 type CommandParameters struct {
-	UID, CID, GID, Name string
-	I                   *DG.Interaction
-	Options             map[string]interface{}
-	S                   Server
-	IsUserTriggered     bool
+	MID, UID, CID, GID, Name string // MID only available on MessageCreate, else empty
+	I                        *DG.Interaction
+	Options                  map[string]interface{}
+	S                        Server
+	IsUserTriggered          bool
 }
 
 func (p *CommandParameters) ParseOptionsFromRaws(raws []string, opts Options) error {
@@ -150,6 +150,7 @@ func ParamsFromInteraction(b *Bot, i *DG.InteractionCreate, name string) Command
 func ParamsFromMessageCreate(b *Bot, m *DG.MessageCreate, name string) CommandParameters {
 	serv := b.GetServer(m.GuildID)
 	return CommandParameters{
+		MID:     m.Message.ID,
 		UID:     m.Message.Author.ID,
 		CID:     m.ChannelID,
 		GID:     m.GuildID,

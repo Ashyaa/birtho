@@ -138,6 +138,7 @@ func Grab(b *Bot, p CommandParameters) {
 			SetColor(0xFFFFFF).
 			SetFooter(footer).
 			SetImage(monster.URL).MessageEmbed)
+		b.s.MessageReactionAdd(p.CID, p.MID, "✅")
 		p.S.Users[p.UID] = U.AppendUnique(p.S.Users[p.UID], item.ID)
 		if !p.S.G.Finished && b.GetUserScore(p.UID, p.S) == b.TotalPoints() {
 			p.S.G.Finished = true
@@ -151,6 +152,7 @@ func Grab(b *Bot, p CommandParameters) {
 			SetTitle("The visitor has fled!").
 			SetDescription(text).
 			SetColor(0xFF0000).MessageEmbed)
+		b.s.MessageReactionAdd(p.CID, p.MID, "❌")
 	}
 	delete(p.S.G.Monsters, channel)
 	b.SaveServer(p.S)
