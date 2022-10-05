@@ -49,7 +49,8 @@ type Server struct {
 // CanSpawn returns true only if an item can spawn in the given channel
 func (s Server) CanSpawn(cid string) bool {
 	delayOk := time.Now().Local().After(s.G.NextSpawn)
-	return s.G.On && delayOk && U.Contains(s.Channels, cid)
+	_, channelHasSpawn := s.G.Monsters[cid]
+	return s.G.On && delayOk && U.Contains(s.Channels, cid) && !channelHasSpawn
 }
 
 // Cooldown sets the server game on cooldown
@@ -86,12 +87,13 @@ type Bot struct {
 type BotAction func(*Bot, CommandParameters)
 
 type Command struct {
-	Name          string
-	Action        BotAction
-	appCmd        *DG.ApplicationCommand
-	Options       Options
-	Admin         bool
-	AlwaysTrigger bool
+	Name           string
+	Action         BotAction
+	appCmd         *DG.ApplicationCommand
+	Options        Options
+	Admin          bool
+	AlwaysTrigger  bool
+	ModifiesServer bool
 }
 
 func (c Command) ID() string {
@@ -104,21 +106,24 @@ func (c Command) ID() string {
 var commandList = []Command{
 	// Game commands
 	{
-		Name:    "trick",
-		Action:  Grab,
-		Options: Options{},
+		Name:           "trick",
+		Action:         Grab,
+		Options:        Options{},
+		ModifiesServer: true,
 	},
 	{
-		Name:    "treat",
-		Action:  Grab,
-		Options: Options{},
+		Name:           "treat",
+		Action:         Grab,
+		Options:        Options{},
+		ModifiesServer: true,
 	},
 	{
-		Name:          "spawn",
-		Action:        Spawn,
-		appCmd:        &DG.ApplicationCommand{Description: "Forces a random monster to appear (for testing purposes)"},
-		Options:       Options{},
-		AlwaysTrigger: true,
+		Name:           "spawn",
+		Action:         Spawn,
+		appCmd:         &DG.ApplicationCommand{Description: "Forces a random monster to appear (for testing purposes)"},
+		Options:        Options{},
+		AlwaysTrigger:  true,
+		ModifiesServer: true,
 	},
 
 	// Score commands
@@ -152,11 +157,12 @@ var commandList = []Command{
 		Admin:   true,
 	},
 	{
-		Name:    "setprefix",
-		Action:  SetPrefix,
-		appCmd:  &DG.ApplicationCommand{Description: "Change the bot prefix"},
-		Options: Options{{"prefix", "new prefix to use", TypeString}},
-		Admin:   true,
+		Name:           "setprefix",
+		Action:         SetPrefix,
+		appCmd:         &DG.ApplicationCommand{Description: "Change the bot prefix"},
+		Options:        Options{{"prefix", "new prefix to use", TypeString}},
+		Admin:          true,
+		ModifiesServer: true,
 	},
 	{
 		Name:   "setcd",
@@ -166,28 +172,32 @@ var commandList = []Command{
 			{"minimum", "minimum cooldown duration (in seconds)", TypeInteger},
 			{"maximum", "maximum cooldown duration (in seconds)", TypeInteger},
 		},
-		Admin: true,
+		Admin:          true,
+		ModifiesServer: true,
 	},
 	{
-		Name:    "setstay",
-		Action:  SetStay,
-		appCmd:  &DG.ApplicationCommand{Description: "Change how long a monsters stays idle"},
-		Options: Options{{"duration", "duration in seconds", TypeInteger}},
-		Admin:   true,
+		Name:           "setstay",
+		Action:         SetStay,
+		appCmd:         &DG.ApplicationCommand{Description: "Change how long a monsters stays idle"},
+		Options:        Options{{"duration", "duration in seconds", TypeInteger}},
+		Admin:          true,
+		ModifiesServer: true,
 	},
 	{
-		Name:    "addchan",
-		Action:  AddChannel,
-		appCmd:  &DG.ApplicationCommand{Description: "Add a channel where monsters can spawn"},
-		Options: Options{{"channel", "channel to add", TypeChannel}},
-		Admin:   true,
+		Name:           "addchan",
+		Action:         AddChannel,
+		appCmd:         &DG.ApplicationCommand{Description: "Add a channel where monsters can spawn"},
+		Options:        Options{{"channel", "channel to add", TypeChannel}},
+		Admin:          true,
+		ModifiesServer: true,
 	},
 	{
-		Name:    "rmvchan",
-		Action:  RemoveChannel,
-		appCmd:  &DG.ApplicationCommand{Description: "Remove a channel where monsters can spawn"},
-		Options: Options{{"channel", "channel to remove", TypeChannel}},
-		Admin:   true,
+		Name:           "rmvchan",
+		Action:         RemoveChannel,
+		appCmd:         &DG.ApplicationCommand{Description: "Remove a channel where monsters can spawn"},
+		Options:        Options{{"channel", "channel to remove", TypeChannel}},
+		Admin:          true,
+		ModifiesServer: true,
 	},
 	{
 		Name:    "chanlist",
@@ -197,18 +207,20 @@ var commandList = []Command{
 		Admin:   true,
 	},
 	{
-		Name:    "addadmin",
-		Action:  AddAdmin,
-		appCmd:  &DG.ApplicationCommand{Description: "Add a bot administrator"},
-		Options: Options{{"user", "user that shall be an administrator", TypeUser}},
-		Admin:   true,
+		Name:           "addadmin",
+		Action:         AddAdmin,
+		appCmd:         &DG.ApplicationCommand{Description: "Add a bot administrator"},
+		Options:        Options{{"user", "user that shall be an administrator", TypeUser}},
+		Admin:          true,
+		ModifiesServer: true,
 	},
 	{
-		Name:    "rmvadmin",
-		Action:  RemoveAdmin,
-		appCmd:  &DG.ApplicationCommand{Description: "Remove a bot administrator"},
-		Options: Options{{"user", "user that be removed from the administrators list", TypeUser}},
-		Admin:   true,
+		Name:           "rmvadmin",
+		Action:         RemoveAdmin,
+		appCmd:         &DG.ApplicationCommand{Description: "Remove a bot administrator"},
+		Options:        Options{{"user", "user that be removed from the administrators list", TypeUser}},
+		Admin:          true,
+		ModifiesServer: true,
 	},
 	{
 		Name:    "admins",
@@ -225,25 +237,28 @@ var commandList = []Command{
 		Admin:   true,
 	},
 	{
-		Name:    "play",
-		Action:  Play,
-		appCmd:  &DG.ApplicationCommand{Description: "Start or stop the game"},
-		Options: Options{{"state", "game status: \"on\" or \"off\"", TypeString}},
-		Admin:   true,
+		Name:           "play",
+		Action:         Play,
+		appCmd:         &DG.ApplicationCommand{Description: "Start or stop the game"},
+		Options:        Options{{"state", "game status: \"on\" or \"off\"", TypeString}},
+		Admin:          true,
+		ModifiesServer: true,
 	},
 	{
-		Name:    "reset",
-		Action:  Reset,
-		appCmd:  &DG.ApplicationCommand{Description: "Reset the game for all users in the server"},
-		Options: Options{},
-		Admin:   true,
+		Name:           "reset",
+		Action:         Reset,
+		appCmd:         &DG.ApplicationCommand{Description: "Reset the game for all users in the server"},
+		Options:        Options{},
+		Admin:          true,
+		ModifiesServer: true,
 	},
 	{
-		Name:    "give",
-		Action:  GiveRandom,
-		appCmd:  &DG.ApplicationCommand{Description: "Give a random item (for testing purposes)"},
-		Options: Options{},
-		Admin:   true,
+		Name:           "give",
+		Action:         GiveRandom,
+		appCmd:         &DG.ApplicationCommand{Description: "Give a random item (for testing purposes)"},
+		Options:        Options{},
+		Admin:          true,
+		ModifiesServer: true,
 	},
 }
 

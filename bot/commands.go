@@ -163,6 +163,10 @@ func ParamsFromMessageCreate(b *Bot, m *DG.MessageCreate, name string) CommandPa
 
 func HandlerFromMessageCreate(b *Bot, cmd Command) func(*DG.Session, *DG.MessageCreate) {
 	return func(s *DG.Session, m *DG.MessageCreate) {
+		if cmd.ModifiesServer {
+			b.mutex.Lock()
+			defer b.mutex.Unlock()
+		}
 		p := ParamsFromMessageCreate(b, m, cmd.Name)
 		if p.UID == b.UserID {
 			return
@@ -191,6 +195,10 @@ func HandlerFromMessageCreate(b *Bot, cmd Command) func(*DG.Session, *DG.Message
 
 func HandlerFromInteraction(b *Bot, cmd Command) func(*DG.Session, *DG.InteractionCreate) {
 	return func(s *DG.Session, i *DG.InteractionCreate) {
+		if cmd.ModifiesServer {
+			b.mutex.Lock()
+			defer b.mutex.Unlock()
+		}
 		p := ParamsFromInteraction(b, i, cmd.Name)
 
 		serv := b.GetServer(p.GID)
