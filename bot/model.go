@@ -44,7 +44,7 @@ type Server struct {
 	Channels []string
 	Admins   []string
 	Users    map[string][]string
-	lb       leaderboard
+	Lb       Leaderboard
 }
 
 // CanSpawn returns true only if an item can spawn in the given channel
@@ -130,14 +130,14 @@ var commandList = []Command{
 	// Score commands
 	{
 		Name:           "leaderboard",
-		Action:         Leaderboard,
+		Action:         ShowLeaderboard,
 		appCmd:         &DG.ApplicationCommand{Description: "Show the server leaderboard"},
 		Options:        Options{},
 		ModifiesServer: true,
 	},
 	{
 		Name:           "score",
-		Action:         Score,
+		Action:         ShowScore,
 		appCmd:         &DG.ApplicationCommand{Description: "Get your scoreboard"},
 		Options:        Options{},
 		ModifiesServer: true,

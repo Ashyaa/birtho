@@ -23,36 +23,48 @@ func (b *Bot) GetUserScore(user string, serv Server) int {
 	return res
 }
 
-type scoreboard struct {
-	userID string
-	user   string
-	score  int
-	rank   string
+func (b *Bot) GetUserScoreboard(user string, serv Server) ScoreBoard {
+	serv = b.updateScore(user, serv)
+	b.SaveServer(serv)
+	var res ScoreBoard
+	for _, sb := range serv.Lb {
+		if sb.UID == user {
+			return sb
+		}
+	}
+	return res
 }
 
-type leaderboard []scoreboard
+type ScoreBoard struct {
+	UID   string
+	Name  string
+	Score int
+	Rank  string
+}
+
+type Leaderboard []ScoreBoard
 
 // Sort the leaderboard by score in decreasing order, and updates the rank.
-func (lb leaderboard) sort() {
+func (lb Leaderboard) sort() {
 	sort.Slice(lb, func(i, j int) bool {
-		return lb[i].score > lb[j].score
+		return lb[i].Score > lb[j].Score
 	})
 	if len(lb) > 0 {
 		rank := 1
-		lb[0].rank = rankString(rank)
+		lb[0].Rank = rankString(rank)
 		for i := 1; i < len(lb); i++ {
 			prev := lb[i-1]
 			cur := lb[i]
-			if prev.score != cur.score {
+			if prev.Score != cur.Score {
 				rank = i + 1
 			}
-			cur.rank = rankString(rank)
+			cur.Rank = rankString(rank)
 			lb[i] = cur
 		}
 	}
 }
 
-func (lb leaderboard) Strings() []string {
+func (lb Leaderboard) Strings() []string {
 	res := []string{}
 	rankPlaces := len(fmt.Sprintf("%d", len(lb))) + 2 // + suffix 'st', 'nd', 'rd', 'th'
 	if rankPlaces < 4 {
@@ -67,13 +79,13 @@ func (lb leaderboard) Strings() []string {
 		return res
 	}
 	for _, sb := range lb {
-		rank := sb.rank
+		rank := sb.Rank
 		rank = padLeft(rank, rankPlaces-len(rank))
 
-		score := fmt.Sprintf("%d", sb.score)
+		score := fmt.Sprintf("%d", sb.Score)
 		score = padLeft(score, 11-len(score))
 
-		line := fmt.Sprintf("%s%s     %s", rank, score, sb.user)
+		line := fmt.Sprintf("%s%s     %s", rank, score, sb.Name)
 		res = append(res, line)
 	}
 	return res
@@ -93,9 +105,9 @@ func (b *Bot) updateLBNames(serv Server) Server {
 		if member.Nick != "" {
 			usrName = member.Nick
 		}
-		for i := range serv.lb {
-			if serv.lb[i].userID == member.User.ID {
-				serv.lb[i].user = usrName
+		for i := range serv.Lb {
+			if serv.Lb[i].UID == member.User.ID {
+				serv.Lb[i].Name = usrName
 				break
 			}
 		}
@@ -106,18 +118,23 @@ func (b *Bot) updateLBNames(serv Server) Server {
 func (b *Bot) updateScore(uid string, serv Server) Server {
 	score := b.GetUserScore(uid, serv)
 	found := false
-	for i := range serv.lb {
-		if serv.lb[i].userID != uid {
+	for i := range serv.Lb {
+		if serv.Lb[i].UID != uid {
 			continue
 		}
 		found = true
-		serv.lb[i].score = score
+		if serv.Lb[i].Score == score {
+			return serv
+		}
+		serv.Lb[i].Score = score
+		break
 	}
 	if !found {
-		serv.lb = append(serv.lb, scoreboard{userID: uid, score: score})
+		serv.Lb = append(serv.Lb, ScoreBoard{UID: uid, Score: score})
 		serv = b.updateLBNames(serv)
+		return serv
 	}
-	serv.lb.sort()
+	serv.Lb.sort()
 	return serv
 }
 
@@ -151,23 +168,22 @@ func padLeft(s string, padding int) string {
 	return res
 }
 
-func (b *Bot) getLeaderBoard(serv Server) leaderboard {
-	if len(serv.lb) == 0 || len(serv.Users) != len(serv.lb) {
-		lb := leaderboard{}
+func (b *Bot) getLeaderBoard(serv Server) Leaderboard {
+	if len(serv.Lb) == 0 || len(serv.Users) != len(serv.Lb) {
+		lb := Leaderboard{}
 		users := serv.Users
 		for usr := range users {
-			lb = append(lb, scoreboard{usr, "", b.GetUserScore(usr, serv), ""})
+			lb = append(lb, ScoreBoard{usr, "", b.GetUserScore(usr, serv), ""})
 		}
 		lb.sort()
-		serv.lb = lb
+		serv.Lb = lb
 	}
-	b.updateLBNames(serv)
+	serv = b.updateLBNames(serv)
 	b.SaveServer(serv)
-
-	return serv.lb
+	return serv.Lb
 }
 
-func Leaderboard(b *Bot, p CommandParameters) {
+func ShowLeaderboard(b *Bot, p CommandParameters) {
 	lb := b.getLeaderBoard(p.S).Strings()
 	menu := NewMenu(lb[1:], 10, p.CID, p.GID)
 	menu.SetHeader(lb[0])
@@ -180,15 +196,6 @@ func Leaderboard(b *Bot, p CommandParameters) {
 	}
 	b.Menus[menu.ID()] = menu
 	time.AfterFunc(time.Duration(61)*time.Second, purgeMenus(b))
-}
-
-func (b *Bot) getRank(usr string, serv Server) string {
-	for _, sb := range serv.lb {
-		if sb.userID == usr {
-			return sb.rank
-		}
-	}
-	return rankString(len(serv.lb) + 2)
 }
 
 func wrap(in string, width int) (r1 string, r2 string) {
@@ -258,25 +265,14 @@ func formatItemList(items []string) []string {
 	return res
 }
 
-func Score(b *Bot, p CommandParameters) {
-	if _, ok := p.S.Users[p.UID]; !ok {
-		p.S.Users[p.UID] = make([]string, 0)
-		b.SaveServer(p.S)
-	}
-	var username string
-	if dgUser, err := b.s.GuildMember(p.GID, p.UID); err == nil {
-		if dgUser.Nick != "" {
-			username = dgUser.Nick
-		} else {
-			username = dgUser.User.Username
-		}
-	}
+func ShowScore(b *Bot, p CommandParameters) {
 	itemList := b.getItemList(p.UID, p.S)
+	sb := b.GetUserScoreboard(p.UID, p.S)
 	menu := NewMenu(formatItemList(itemList), 20, p.CID, p.GID)
-	menu.SetTitle(username + "'s scoreboard")
+	menu.SetTitle(sb.Name + "'s scoreboard")
 	infos := fmt.Sprintf("Items: `%d/%d`", len(p.S.Users[p.UID]), len(b.Items))
-	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Points: `%d`", b.GetUserScore(p.UID, p.S))
-	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Rank: `%s`", b.getRank(p.UID, p.S))
+	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Points: `%d`", sb.Score)
+	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Rank: `%s`", sb.Rank)
 	menu.SetSubtitle(infos)
 	err := menu.Send(b.s, p.I)
 	if err != nil {

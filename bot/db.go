@@ -39,6 +39,7 @@ func (b *Bot) NewServer(id string) Server {
 		Channels: make([]string, 0),
 		Admins:   make([]string, 0),
 		Users:    make(map[string][]string),
+		Lb:       make(Leaderboard, 0),
 	}
 	b.db.Save(&serv)
 	return serv
