@@ -32,6 +32,16 @@ type Item struct {
 	Range  Range   `json:"range,omitempty" yaml:"range,omitempty"`
 }
 
+func (i Item) Description() string {
+	rarity := " (*)"
+	if i.Chance < 20 {
+		rarity = " (⁂)"
+	} else if i.Chance < 50 {
+		rarity = " (⁑)"
+	}
+	return i.Name + rarity
+}
+
 type Monster struct {
 	ID               int     `json:"id" yaml:"id"`
 	Name             string  `json:"name" yaml:"name"`

@@ -2,6 +2,7 @@ package bot
 
 import (
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -162,6 +163,17 @@ func (b *Bot) AddItems(items []Item) {
 	for _, item := range items {
 		b.Items[item.ID] = item
 	}
+}
+
+func (b *Bot) SortedItems() (res []Item) {
+	for _, item := range b.Items {
+		res = append(res, item)
+	}
+	sort.Slice(res, func(i, j int) bool {
+		v := strings.Compare(res[i].ID, res[j].ID)
+		return v < 0
+	})
+	return
 }
 
 func (b *Bot) TotalPoints() int {

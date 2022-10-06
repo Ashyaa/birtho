@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	U "github.com/ashyaa/birtho/util"
 )
 
 func (b *Bot) GetUserScore(user string, serv Server) int {
@@ -182,11 +184,21 @@ func wrap(in string, width int) (r1 string, r2 string) {
 	return
 }
 
+const UnknownItem = "???   "
+
 func (b *Bot) getItemList(usr string, serv Server) []string {
 	res := []string{}
-	for _, itemID := range serv.Users[usr] {
-		if item, ok := b.Items[itemID]; ok {
-			res = append(res, item.Name)
+	userItems, ok := serv.Users[usr]
+	if !ok {
+		return res
+	}
+	for _, item := range b.SortedItems() {
+		b.Info("%s (%s)", item.Name, item.ID)
+		hasItem := U.Contains(userItems, item.ID)
+		if hasItem {
+			res = append(res, item.Description())
+		} else {
+			res = append(res, UnknownItem)
 		}
 	}
 	return res
