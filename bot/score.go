@@ -156,16 +156,7 @@ func (b *Bot) getLeaderBoard(serv Server) leaderboard {
 		lb := leaderboard{}
 		users := serv.Users
 		for usr := range users {
-			usrName := usr
-			dgUsr, err := b.s.GuildMember(serv.ID, usr)
-			if err == nil {
-				if dgUsr.Nick != "" {
-					usrName = dgUsr.Nick
-				} else {
-					usrName = dgUsr.User.Username
-				}
-			}
-			lb = append(lb, scoreboard{usr, usrName, b.GetUserScore(usr, serv), ""})
+			lb = append(lb, scoreboard{usr, "", b.GetUserScore(usr, serv), ""})
 		}
 		lb.sort()
 		serv.lb = lb
