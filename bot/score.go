@@ -32,9 +32,29 @@ type scoreboard struct {
 
 type leaderboard []scoreboard
 
-func (l leaderboard) Strings() []string {
+// Sort the leaderboard by score in decreasing order, and updates the rank.
+func (lb leaderboard) sort() {
+	sort.Slice(lb, func(i, j int) bool {
+		return lb[i].score > lb[j].score
+	})
+	if len(lb) > 0 {
+		rank := 1
+		lb[0].rank = rankString(rank)
+		for i := 1; i < len(lb); i++ {
+			prev := lb[i-1]
+			cur := lb[i]
+			if prev.score != cur.score {
+				rank = i + 1
+			}
+			cur.rank = rankString(rank)
+			lb[i] = cur
+		}
+	}
+}
+
+func (lb leaderboard) Strings() []string {
 	res := []string{}
-	rankPlaces := len(fmt.Sprintf("%d", len(l))) + 2 // + suffix 'st', 'nd', 'rd', 'th'
+	rankPlaces := len(fmt.Sprintf("%d", len(lb))) + 2 // + suffix 'st', 'nd', 'rd', 'th'
 	if rankPlaces < 4 {
 		rankPlaces = 4
 	}
@@ -43,10 +63,10 @@ func (l leaderboard) Strings() []string {
 		header = padLeft(header, rankPlaces-4)
 	}
 	res = append(res, header)
-	if len(l) == 0 {
+	if len(lb) == 0 {
 		return res
 	}
-	for _, sb := range l {
+	for _, sb := range lb {
 		rank := sb.rank
 		rank = padLeft(rank, rankPlaces-len(rank))
 
@@ -57,6 +77,48 @@ func (l leaderboard) Strings() []string {
 		res = append(res, line)
 	}
 	return res
+}
+
+// Update leaderboard names with current user nicknames if any, else username
+func (b *Bot) updateLBNames(serv Server) Server {
+	members, err := b.s.GuildMembers(serv.ID, "", 1000)
+	if err != nil {
+		return serv
+	}
+	for _, member := range members {
+		if _, ok := serv.Users[member.User.ID]; !ok {
+			continue
+		}
+		usrName := member.User.Username
+		if member.Nick != "" {
+			usrName = member.Nick
+		}
+		for i := range serv.lb {
+			if serv.lb[i].userID == member.User.ID {
+				serv.lb[i].user = usrName
+				break
+			}
+		}
+	}
+	return serv
+}
+
+func (b *Bot) updateScore(uid string, serv Server) Server {
+	score := b.GetUserScore(uid, serv)
+	found := false
+	for i := range serv.lb {
+		if serv.lb[i].userID != uid {
+			continue
+		}
+		found = true
+		serv.lb[i].score = score
+	}
+	if !found {
+		serv.lb = append(serv.lb, scoreboard{userID: uid, score: score})
+		serv = b.updateLBNames(serv)
+	}
+	serv.lb.sort()
+	return serv
 }
 
 func rankString(n int) string {
@@ -90,11 +152,9 @@ func padLeft(s string, padding int) string {
 }
 
 func (b *Bot) getLeaderBoard(serv Server) leaderboard {
-	lb := leaderboard{}
-	users := serv.Users
-	members, err := b.s.GuildMembers(serv.ID, "", 1000)
-	if err != nil {
-		b.ErrorE(err, "fetching guild members")
+	if len(serv.lb) == 0 || len(serv.Users) != len(serv.lb) {
+		lb := leaderboard{}
+		users := serv.Users
 		for usr := range users {
 			usrName := usr
 			dgUsr, err := b.s.GuildMember(serv.ID, usr)
@@ -107,36 +167,13 @@ func (b *Bot) getLeaderBoard(serv Server) leaderboard {
 			}
 			lb = append(lb, scoreboard{usr, usrName, b.GetUserScore(usr, serv), ""})
 		}
-	} else {
-		for _, member := range members {
-			if _, ok := users[member.User.ID]; !ok {
-				continue
-			}
-			usrName := member.User.Username
-			if member.Nick != "" {
-				usrName = member.Nick
-			}
-			lb = append(lb, scoreboard{member.User.ID, usrName, b.GetUserScore(member.User.ID, serv), ""})
-		}
+		lb.sort()
+		serv.lb = lb
 	}
+	b.updateLBNames(serv)
+	b.SaveServer(serv)
 
-	sort.Slice(lb, func(i, j int) bool {
-		return lb[i].score > lb[j].score
-	})
-	if len(lb) > 0 {
-		rank := 1
-		lb[0].rank = rankString(rank)
-		for i := 1; i < len(lb); i++ {
-			prev := lb[i-1]
-			cur := lb[i]
-			if prev.score != cur.score {
-				rank = i + 1
-			}
-			cur.rank = rankString(rank)
-			lb[i] = cur
-		}
-	}
-	return lb
+	return serv.lb
 }
 
 func Leaderboard(b *Bot, p CommandParameters) {
@@ -155,13 +192,12 @@ func Leaderboard(b *Bot, p CommandParameters) {
 }
 
 func (b *Bot) getRank(usr string, serv Server) string {
-	lb := b.getLeaderBoard(serv)
-	for _, sb := range lb {
+	for _, sb := range serv.lb {
 		if sb.userID == usr {
 			return sb.rank
 		}
 	}
-	return rankString(len(lb) + 1)
+	return rankString(len(serv.lb) + 2)
 }
 
 func wrap(in string, width int) (r1 string, r2 string) {
@@ -193,7 +229,6 @@ func (b *Bot) getItemList(usr string, serv Server) []string {
 		return res
 	}
 	for _, item := range b.SortedItems() {
-		b.Info("%s (%s)", item.Name, item.ID)
 		hasItem := U.Contains(userItems, item.ID)
 		if hasItem {
 			res = append(res, item.Description())

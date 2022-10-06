@@ -143,6 +143,9 @@ func Grab(b *Bot, p CommandParameters) {
 			SetImage(monster.URL).MessageEmbed)
 		b.s.MessageReactionAdd(p.CID, p.MID, "✅")
 		p.S.Users[p.UID] = U.AppendUnique(p.S.Users[p.UID], item.ID)
+		if !duplicate {
+			p.S = b.updateScore(p.UID, p.S)
+		}
 		if !p.S.G.Finished && b.GetUserScore(p.UID, p.S) == b.TotalPoints() {
 			p.S.G.Finished = true
 			p.S.G.Winner = p.UID
