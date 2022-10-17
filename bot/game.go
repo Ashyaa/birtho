@@ -67,6 +67,9 @@ func Spawn(b *Bot, p CommandParameters) {
 	if isManualCommand {
 		b.Info("command %s triggered manually", p.Name)
 	} else {
+		if b.TriggersAnyOtherCommand(p) {
+			return
+		}
 		userName := p.UID
 		member, err := b.s.GuildMember(p.GID, p.UID)
 		if err == nil {
@@ -150,7 +153,7 @@ func Grab(b *Bot, p CommandParameters) {
 			SetColor(0xFFFFFF).
 			SetFooter(footer).
 			SetImage(monster.URL).MessageEmbed)
-		b.s.MessageReactionAdd(p.CID, p.MID, "✅")
+		b.s.MessageReactionAdd(p.CID, p.MsgCreate.ID, "✅")
 		p.S.Users[p.UID] = U.AppendUnique(p.S.Users[p.UID], item.ID)
 		if !duplicate {
 			p.S = b.updateScore(p.UID, p.S)
@@ -167,7 +170,7 @@ func Grab(b *Bot, p CommandParameters) {
 			SetTitle("The visitor has fled!").
 			SetDescription(text).
 			SetColor(0xFF0000).MessageEmbed)
-		b.s.MessageReactionAdd(p.CID, p.MID, "❌")
+		b.s.MessageReactionAdd(p.CID, p.MsgCreate.ID, "❌")
 	}
 	delete(p.S.G.Monsters, channel)
 	b.SaveServer(p.S)

@@ -3,10 +3,57 @@ package bot
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
 )
+
+// Returns true and the command content if the message triggers the command, else false and an empty string
+func (b *Bot) triggered(m *DG.MessageCreate, serv Server, cmd Command) ([]string, bool) {
+	payload := []string{}
+	if cmd.Admin && !serv.IsAdmin(m.Author.ID) {
+		return payload, false
+	}
+
+	tagCommand := b.Mention + " " + cmd.Name
+	fields := strings.Fields(m.Content)
+	if strings.HasPrefix(m.Content, tagCommand) {
+		if len(m.Content) > len(tagCommand) && !strings.HasPrefix(m.Content, tagCommand+" ") {
+			return payload, false
+		}
+		if len(fields) > 2 {
+			payload = fields[2:]
+		}
+		return payload, true
+	}
+	prefixCommand := serv.Prefix + cmd.Name
+	if strings.HasPrefix(m.Content, prefixCommand) {
+		if len(m.Content) > len(prefixCommand) && !strings.HasPrefix(m.Content, prefixCommand+" ") {
+			return payload, false
+		}
+		if len(fields) > 1 {
+			payload = fields[1:]
+		}
+		return payload, true
+	}
+	return payload, false
+}
+
+func (b *Bot) TriggersAnyOtherCommand(p CommandParameters) bool {
+	if p.MsgCreate == nil {
+		return false
+	}
+	for _, cmd := range b.Commands {
+		if p.Name == cmd.Name {
+			continue
+		}
+		if _, ok := b.triggered(p.MsgCreate, p.S, cmd); ok {
+			return true
+		}
+	}
+	return false
+}
 
 func SendText(s *DG.Session, i *DG.Interaction, channelID, content string) (*DG.Message, error) {
 	if i == nil {
@@ -61,11 +108,12 @@ func (b *Bot) buildInteractionHandlers() {
 }
 
 type CommandParameters struct {
-	MID, UID, CID, GID, Name string // MID only available on MessageCreate, else empty
-	I                        *DG.Interaction
-	Options                  map[string]interface{}
-	S                        Server
-	IsUserTriggered          bool
+	UID, CID, GID, Name string // MID only available on MessageCreate, else empty
+	MsgCreate           *DG.MessageCreate
+	I                   *DG.Interaction
+	Options             map[string]interface{}
+	S                   Server
+	IsUserTriggered     bool
 }
 
 func (p *CommandParameters) ParseOptionsFromRaws(raws []string, opts Options) error {
@@ -150,14 +198,14 @@ func ParamsFromInteraction(b *Bot, i *DG.InteractionCreate, name string) Command
 func ParamsFromMessageCreate(b *Bot, m *DG.MessageCreate, name string) CommandParameters {
 	serv := b.GetServer(m.GuildID)
 	return CommandParameters{
-		MID:     m.Message.ID,
-		UID:     m.Message.Author.ID,
-		CID:     m.ChannelID,
-		GID:     m.GuildID,
-		I:       nil,
-		Name:    name,
-		Options: map[string]interface{}{},
-		S:       serv,
+		UID:       m.Author.ID,
+		CID:       m.ChannelID,
+		GID:       m.GuildID,
+		MsgCreate: m,
+		I:         nil,
+		Name:      name,
+		Options:   map[string]interface{}{},
+		S:         serv,
 	}
 }
 

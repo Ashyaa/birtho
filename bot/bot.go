@@ -99,37 +99,6 @@ func (b *Bot) Stop() {
 	b.Info("gracefully shutting down")
 }
 
-// Returns true and the command content if the message triggers the command, else false and an empty string
-func (b *Bot) triggered(m *DG.MessageCreate, serv Server, cmd Command) ([]string, bool) {
-	payload := []string{}
-	if cmd.Admin && !serv.IsAdmin(m.Author.ID) {
-		return payload, false
-	}
-
-	tagCommand := b.Mention + " " + cmd.Name
-	fields := strings.Fields(m.Content)
-	if strings.HasPrefix(m.Content, tagCommand) {
-		if len(m.Content) > len(tagCommand) && !strings.HasPrefix(m.Content, tagCommand+" ") {
-			return payload, false
-		}
-		if len(fields) > 2 {
-			payload = fields[2:]
-		}
-		return payload, true
-	}
-	prefixCommand := serv.Prefix + cmd.Name
-	if strings.HasPrefix(m.Content, prefixCommand) {
-		if len(m.Content) > len(prefixCommand) && !strings.HasPrefix(m.Content, prefixCommand+" ") {
-			return payload, false
-		}
-		if len(fields) > 1 {
-			payload = fields[1:]
-		}
-		return payload, true
-	}
-	return payload, false
-}
-
 func (b *Bot) buildGameData(conf Config) {
 	b.MonsterIds = make([]string, 0)
 	b.Monsters = make(map[string]Monster)
