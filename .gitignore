@@ -11,9 +11,10 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Do not commit public key, bot token etc.
+# Do not commit public key, bot token, logs etc.
 config/*
 assets/*
+logs/*
 
 # Database for testing purposes
 *.db

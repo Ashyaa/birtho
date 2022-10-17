@@ -25,4 +25,5 @@ require (
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )
