@@ -22,7 +22,7 @@ func New() LR.Logger {
 	logDir := FP.Join(path.Dir(exePath), "logs")
 	if stat, err := os.Stat(logDir); err != nil {
 		if os.IsNotExist(err) {
-			os.Mkdir(logDir, 0644)
+			os.Mkdir(logDir, 0755)
 		}
 	} else if !stat.IsDir() {
 		res.Fatalf("%s exists but is not a directory", logDir)
