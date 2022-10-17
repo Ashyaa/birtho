@@ -64,7 +64,16 @@ func Spawn(b *Bot, p CommandParameters) {
 	if !p.S.CanSpawn(p.CID) && !isManualCommand {
 		return
 	}
-	b.Info("command %s triggered", p.Name)
+	if isManualCommand {
+		b.Info("command %s triggered manually", p.Name)
+	} else {
+		userName := p.UID
+		member, err := b.s.GuildMember(p.GID, p.UID)
+		if err == nil {
+			userName = U.MemberName(member)
+		}
+		b.Info("command %s triggered by %s", p.Name, userName)
+	}
 
 	monster := b.RandomMonster()
 	spawn := MonsterSpawn{

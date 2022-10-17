@@ -101,13 +101,9 @@ func (b *Bot) updateLBNames(serv Server) Server {
 		if _, ok := serv.Users[member.User.ID]; !ok {
 			continue
 		}
-		usrName := member.User.Username
-		if member.Nick != "" {
-			usrName = member.Nick
-		}
 		for i := range serv.Lb {
 			if serv.Lb[i].UID == member.User.ID {
-				serv.Lb[i].Name = usrName
+				serv.Lb[i].Name = U.MemberName(member)
 				break
 			}
 		}

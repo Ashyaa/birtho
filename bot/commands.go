@@ -172,11 +172,7 @@ func HandlerFromMessageCreate(b *Bot, cmd Command) func(*DG.Session, *DG.Message
 			return
 		}
 
-		if cmd.Admin && !p.S.IsAdmin(p.UID) {
-			return
-		}
-
-		raws, ok := b.triggered(s, m, p.S.Prefix, cmd.Name)
+		raws, ok := b.triggered(m, p.S, cmd)
 		if !ok && !cmd.AlwaysTrigger {
 			return
 		}

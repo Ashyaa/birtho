@@ -100,9 +100,13 @@ func (b *Bot) Stop() {
 }
 
 // Returns true and the command content if the message triggers the command, else false and an empty string
-func (b *Bot) triggered(s *DG.Session, m *DG.MessageCreate, prefix, command string) ([]string, bool) {
-	tagCommand := b.Mention + " " + command
+func (b *Bot) triggered(m *DG.MessageCreate, serv Server, cmd Command) ([]string, bool) {
 	payload := []string{}
+	if cmd.Admin && !serv.IsAdmin(m.Author.ID) {
+		return payload, false
+	}
+
+	tagCommand := b.Mention + " " + cmd.Name
 	fields := strings.Fields(m.Content)
 	if strings.HasPrefix(m.Content, tagCommand) {
 		if len(m.Content) > len(tagCommand) && !strings.HasPrefix(m.Content, tagCommand+" ") {
@@ -113,7 +117,7 @@ func (b *Bot) triggered(s *DG.Session, m *DG.MessageCreate, prefix, command stri
 		}
 		return payload, true
 	}
-	prefixCommand := prefix + command
+	prefixCommand := serv.Prefix + cmd.Name
 	if strings.HasPrefix(m.Content, prefixCommand) {
 		if len(m.Content) > len(prefixCommand) && !strings.HasPrefix(m.Content, prefixCommand+" ") {
 			return payload, false

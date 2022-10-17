@@ -63,3 +63,13 @@ func IsUserInServer(s *DG.Session, gid, uid string) bool {
 	_, err := s.GuildMember(gid, uid)
 	return err == nil
 }
+
+func MemberName(m *DG.Member) string {
+	if m == nil {
+		return ""
+	}
+	if m.Nick != "" {
+		return m.Nick
+	}
+	return m.User.Username
+}
