@@ -184,7 +184,11 @@ func ShowLeaderboard(b *Bot, p CommandParameters) {
 	menu := NewMenu(lb[1:], 10, p.CID, p.GID)
 	menu.SetHeader(lb[0])
 	menu.SetTitle("Server leaderboard")
-	menu.SetSubtitle(fmt.Sprintf("Total number of points: `%d`", b.TotalPoints()))
+	subtitle := fmt.Sprintf("Total number of points: `%d`", b.TotalPoints())
+	if p.S.G.Finished {
+		subtitle += "\u2060 \u2060 \u2060 \u2060 \u2060 Winner: " + U.BuildUserTag(p.S.G.Winner)
+	}
+	menu.SetSubtitle(subtitle)
 	err := menu.Send(b.s, p.I)
 	if err != nil {
 		b.Error("creating menu: %s", err.Error())
