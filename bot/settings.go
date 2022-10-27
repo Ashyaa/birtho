@@ -73,11 +73,11 @@ func Info(b *Bot, p CommandParameters) {
 	msg.AddField("Play status", fmt.Sprintf("`%s`", status))
 
 	// Show game status
-	game := "ongoing"
+	game := "`ongoing`"
 	if p.S.G.Finished {
-		game = fmt.Sprintf("finished (winner: %s)", U.BuildUserTag(p.S.G.Winner))
+		game = fmt.Sprintf("`finished (winner: `%s`)`", U.BuildUserTag(p.S.G.Winner))
 	}
-	msg.AddField("Game status", fmt.Sprintf("`%s`", game))
+	msg.AddField("Game status", game)
 
 	if p.S.G.On {
 		msg.AddField("Next spawn", U.Timestamp(p.S.G.NextSpawn))

@@ -196,20 +196,45 @@ func trickOrTreat() bool {
 	return n > 499
 }
 
-func GiveRandom(b *Bot, p CommandParameters) {
+func GiveNew(b *Bot, p CommandParameters) {
 	items := []string{}
 	for item := range b.Items {
 		items = append(items, item)
 	}
 
-	item := items[rand.Intn(len(items))]
 	if _, ok := p.S.Users[p.UID]; !ok {
 		p.S.Users[p.UID] = make([]string, 0)
 	}
+	if U.Contains(p.S.Users[p.UID], "") {
+		newItems := []string{}
+		for _, item := range p.S.Users[p.UID] {
+			if item == "" {
+				continue
+			}
+			newItems = append(newItems, item)
+		}
+		p.S.Users[p.UID] = newItems
+	}
+	if len(p.S.Users[p.UID]) == len(items) {
+		SendText(b.s, p.I, p.CID, "Already have all items")
+		return
+	}
+	var item string
+	for {
+		item = items[rand.Intn(len(items))]
+		if !U.Contains(p.S.Users[p.UID], item) {
+			break
+		}
+	}
 	p.S.Users[p.UID] = U.AppendUnique(p.S.Users[p.UID], item)
+	msg := fmt.Sprintf("Gave you one `%s`", b.Items[item].Name)
+	if len(p.S.Users[p.UID]) == len(items) {
+		p.S.G.Finished = true
+		p.S.G.Winner = p.UID
+		SendText(b.s, p.I, p.CID, fmt.Sprintf(winningMessage, U.BuildUserTag(p.UID)))
+	}
 	b.SaveServer(p.S)
 
-	msg := fmt.Sprintf("Gave you one `%s`", b.Items[item].Name)
 	SendText(b.s, p.I, p.CID, msg)
 }
 

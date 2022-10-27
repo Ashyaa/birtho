@@ -257,7 +257,7 @@ var commandList = []Command{
 	},
 	{
 		Name:           "give",
-		Action:         GiveRandom,
+		Action:         GiveNew,
 		appCmd:         &DG.ApplicationCommand{Description: "Give a random item (for testing purposes)"},
 		Options:        Options{},
 		Admin:          true,
