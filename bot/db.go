@@ -23,6 +23,9 @@ func (b *Bot) GetServer(id string) Server {
 	if res.Users == nil {
 		res.Users = make(map[string][]string)
 	}
+	if IsHistoryInvalid(res.G.LastMessages) {
+		res.G.LastMessages = NewHistory()
+	}
 	return res
 }
 
@@ -35,6 +38,7 @@ func (b *Bot) NewServer(id string) Server {
 			MinDelay:      DefaultMinDelay,
 			VariableDelay: DefaultVariableDelay,
 			StayTime:      DefaultStayTime,
+			LastMessages:  NewHistory(),
 		},
 		Channels: make([]string, 0),
 		Admins:   make([]string, 0),

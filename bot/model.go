@@ -15,6 +15,7 @@ const (
 	DefaultMinDelay      = 120
 	DefaultVariableDelay = 781
 	DefaultStayTime      = 5 * time.Second
+	HistoryDepth         = 10
 )
 
 var DefaultMemberPermissions int64 = DG.PermissionManageServer
@@ -31,9 +32,36 @@ type Game struct {
 	NextSpawn     time.Time
 	MinDelay      time.Duration
 	StayTime      time.Duration
+	SpawnRate     int
 	VariableDelay int
 	Finished      bool
+	LastMessages  History
 	Winner        string
+}
+
+func (g *Game) Spawns(rng U.RNG) bool {
+	if !g.LastMessages.HasSeveralAuthors() || g.LastMessages.Span() > time.Hour {
+		// if g.LastMessages.Span() > time.Hour { // for debug
+		return false
+	}
+	return rng.PercentChance(g.SpawnRate)
+}
+
+func (g *Game) IncreaseSpawnRate(rng U.RNG, msg *DG.Message) {
+	g.LastMessages = g.LastMessages.Update(msg)
+	span := g.LastMessages.Span()
+	if span > time.Hour {
+		g.ResetSpawnRate()
+		g.SpawnRate += rng.Intn(2)
+	} else if g.LastMessages.Span() > 15*time.Minute {
+		return
+	} else {
+		g.SpawnRate += rng.Intn(3)
+	}
+}
+
+func (g *Game) ResetSpawnRate() {
+	g.SpawnRate = 0
 }
 
 type Server struct {

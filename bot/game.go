@@ -69,13 +69,21 @@ func Spawn(b *Bot, p CommandParameters) {
 		if b.TriggersAnyOtherCommand(p) {
 			return
 		}
+		if !p.S.G.Spawns(b.rng) {
+			p.S.G.IncreaseSpawnRate(b.rng, p.MsgCreate.Message)
+			b.SaveServer(p.S)
+			return
+		}
 		userName := p.UID
 		member, err := b.s.GuildMember(p.GID, p.UID)
 		if err == nil {
 			userName = U.MemberName(member)
 		}
 		b.Info("command %s triggered by %s", p.Name, userName)
+		p.S.G.LastMessages = p.S.G.LastMessages.Update(p.MsgCreate.Message)
 	}
+
+	p.S.G.ResetSpawnRate()
 
 	monster := b.RandomMonster()
 	spawn := MonsterSpawn{
