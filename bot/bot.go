@@ -1,18 +1,16 @@
 package bot
 
 import (
-	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	U "github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
 	LR "github.com/sirupsen/logrus"
 )
 
-func New(log LR.Logger) (*Bot, error) {
+func New(log *LR.Logger) (*Bot, error) {
 	conf, err := ReadConfig(log)
 	if err != nil {
 		log.Error("error reading config: ", err)
@@ -24,6 +22,7 @@ func New(log LR.Logger) (*Bot, error) {
 		Items:               make(map[string]Item),
 		InteractionHandlers: make(InteractionHandlers),
 		Commands:            make([]Command, 0),
+		rng:                 U.NewRNG(),
 	}
 	res.buildGameData(conf)
 
@@ -35,9 +34,6 @@ func New(log LR.Logger) (*Bot, error) {
 
 	// Open the database
 	res.OpenDB()
-
-	// Provide a seed for the pseudo-random number generator
-	rand.Seed(time.Now().UTC().UnixNano())
 
 	res.s.Identify.Intents = DG.IntentsGuildMessages | DG.IntentGuildMessageReactions | DG.IntentGuildMembers
 

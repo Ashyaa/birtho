@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"math/rand"
 	"sync"
 	"time"
 
@@ -49,14 +48,20 @@ type Server struct {
 
 // CanSpawn returns true only if an item can spawn in the given channel
 func (s Server) CanSpawn(cid string) bool {
-	delayOk := time.Now().Local().After(s.G.NextSpawn)
 	_, channelHasSpawn := s.G.Monsters[cid]
-	return s.G.On && delayOk && U.Contains(s.Channels, cid) && !channelHasSpawn
+	// If the game is not on, the channel is not a spawn channel, or the channel already has
+	// a spawn, a spawn cannot happen
+	if !s.G.On || !U.Contains(s.Channels, cid) || channelHasSpawn {
+		return false
+	}
+	// cooldown check
+	delayOk := time.Now().Local().After(s.G.NextSpawn)
+	return delayOk
 }
 
 // Cooldown sets the server game on cooldown
-func (s *Server) Cooldown() {
-	randomDelay := time.Duration(rand.Intn(s.G.VariableDelay)) * time.Second
+func (s *Server) Cooldown(rng U.RNG) {
+	randomDelay := time.Duration(rng.Intn(s.G.VariableDelay)) * time.Second
 	s.G.NextSpawn = time.Now().Local().Add(s.G.MinDelay) // Base cooldown of 2mn
 	s.G.NextSpawn = s.G.NextSpawn.Add(randomDelay)       // variable cooldown, up to 15mn total
 }
@@ -72,7 +77,7 @@ func (s Server) IsAdmin(uid string) bool {
 type Bot struct {
 	s                   *DG.Session
 	db                  *storm.DB
-	Log                 LR.Logger
+	Log                 *LR.Logger
 	UserID              string
 	Mention             string
 	Items               map[string]Item
@@ -83,6 +88,7 @@ type Bot struct {
 	InteractionHandlers InteractionHandlers
 	Commands            []Command
 	mutex               sync.Mutex
+	rng                 U.RNG
 }
 
 type BotAction func(*Bot, CommandParameters)

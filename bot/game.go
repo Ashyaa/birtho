@@ -2,7 +2,6 @@ package bot
 
 import (
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -14,11 +13,11 @@ import (
 
 func (b *Bot) RandomMonster() Monster {
 	if b.EqualMonsterChances {
-		index := rand.Intn(len(b.MonsterIds))
+		index := b.rng.Intn(len(b.MonsterIds))
 		key := b.MonsterIds[index]
 		return b.Monsters[key]
 	}
-	number := rand.Intn(10000) + 1
+	number := b.rng.Intn(10000) + 1
 	for _, m := range b.Monsters {
 		if m.Range.Belongs(number) {
 			return m
@@ -36,7 +35,7 @@ func Play(b *Bot, p CommandParameters) {
 		return
 	}
 
-	p.S.Cooldown()
+	p.S.Cooldown(b.rng)
 	p.S.G.On = arg == "on"
 	b.SaveServer(p.S)
 
@@ -84,7 +83,7 @@ func Spawn(b *Bot, p CommandParameters) {
 		Expected: "trick",
 	}
 
-	if trickOrTreat() {
+	if trickOrTreat(b.rng) {
 		spawn.Expected = "treat"
 	}
 	command := p.S.Prefix + spawn.Expected
@@ -101,7 +100,7 @@ func Spawn(b *Bot, p CommandParameters) {
 	}
 	spawn.Message = msg.ID
 	p.S.G.Monsters[p.CID] = spawn
-	p.S.Cooldown()
+	p.S.Cooldown(b.rng)
 	b.SaveServer(p.S)
 
 	time.AfterFunc(p.S.G.StayTime, func() {
@@ -142,7 +141,7 @@ func Grab(b *Bot, p CommandParameters) {
 
 	if p.Name == spawn.Expected {
 		monster := b.Monsters[spawn.ID]
-		item := monster.RandomItem(b.Log)
+		item := monster.RandomItem(b.rng, b.Log)
 		text := fmt.Sprintf("As a thank you for your kindness, **%s** gives %s one **%s**",
 			monster.Name, U.BuildUserTag(p.UID), item.Name)
 		duplicate := U.Contains(p.S.Users[p.UID], item.ID)
@@ -191,8 +190,8 @@ func itemDescription(item Item, duplicate bool) string {
 	return text + " It has been added to your inventory."
 }
 
-func trickOrTreat() bool {
-	n := rand.Intn(1000)
+func trickOrTreat(rng U.RNG) bool {
+	n := rng.Intn(1000)
 	return n > 499
 }
 
@@ -221,7 +220,7 @@ func GiveNew(b *Bot, p CommandParameters) {
 	}
 	var item string
 	for {
-		item = items[rand.Intn(len(items))]
+		item = items[b.rng.Intn(len(items))]
 		if !U.Contains(p.S.Users[p.UID], item) {
 			break
 		}

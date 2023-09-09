@@ -3,7 +3,6 @@ package bot
 import (
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
 	"path"
@@ -55,7 +54,7 @@ type Monster struct {
 }
 
 // Build the item data for the game. Returns false if a major error was encountered, else true.
-func (m *Monster) buildItems(log LR.Logger) bool {
+func (m *Monster) buildItems(log *LR.Logger) bool {
 	sum := 1
 	if len(m.Items) == 0 {
 		return false
@@ -80,12 +79,12 @@ func (m *Monster) buildItems(log LR.Logger) bool {
 	return true
 }
 
-func (m Monster) RandomItem(log LR.Logger) Item {
+func (m Monster) RandomItem(rng U.RNG, log *LR.Logger) Item {
 	if m.EqualItemChances {
-		index := rand.Intn(len(m.Items))
+		index := rng.Intn(len(m.Items))
 		return m.Items[index]
 	}
-	number := rand.Intn(10000) + 1
+	number := rng.Intn(10000) + 1
 	for _, item := range m.Items {
 		if item.Range.Belongs(number) {
 			return item
@@ -106,7 +105,7 @@ type Config struct {
 	filepath          string
 }
 
-func ReadConfig(log LR.Logger) (Config, error) {
+func ReadConfig(log *LR.Logger) (Config, error) {
 	filepath := os.Getenv("BIRTHO_CONFIG")
 	if filepath == "" {
 		filepath = "config/data.yml"
@@ -128,7 +127,7 @@ func ReadConfig(log LR.Logger) (Config, error) {
 	return conf, nil
 }
 
-func (c *Config) init(log LR.Logger) {
+func (c *Config) init(log *LR.Logger) {
 	modified := false
 	IDs := []int{}
 	for _, m := range c.Monsters {

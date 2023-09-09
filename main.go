@@ -18,7 +18,7 @@ var (
 func init() {
 	var err error
 	logger = log.New()
-	b, err = bot.New(logger)
+	b, err = bot.New(&logger)
 	if err != nil {
 		panic(err)
 	}
