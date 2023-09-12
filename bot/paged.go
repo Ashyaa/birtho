@@ -18,6 +18,7 @@ type Menu struct {
 	mID      string   // Discord message ID
 	gID      string   // Discord guild ID
 	L        []string // List to be displayed in a embed message
+	Images   []string // List of images to be set as thumbnails on each page
 	header   string
 	expires  time.Time
 	page     int // Current page
@@ -43,6 +44,7 @@ func NewMenu(list []string, size int, cID, gID string) Menu {
 		size:    size,
 		cID:     cID,
 		gID:     gID,
+		Images:  make([]string, maxPage),
 	}
 	return res
 }
@@ -55,6 +57,13 @@ func (m *Menu) SetSubtitle(subtitle string) {
 	m.subtitle = subtitle
 }
 
+func (m *Menu) SetImages(images []string) {
+	nbImages := max(m.maxPage, len(images))
+	for i := 0; i < nbImages; i++ {
+		m.Images[i] = images[i]
+	}
+}
+
 func (m *Menu) SetHeader(header string) {
 	m.header = header
 }
@@ -65,11 +74,19 @@ func (m *Menu) Send(s *DG.Session, i *DG.Interaction) error {
 		return err
 	}
 	m.mID = msg.ID
+	err = s.MessageReactionAdd(m.cID, m.mID, "⏪")
+	if err != nil {
+		return err
+	}
 	err = s.MessageReactionAdd(m.cID, m.mID, "⬅️")
 	if err != nil {
 		return err
 	}
 	err = s.MessageReactionAdd(m.cID, m.mID, "➡️")
+	if err != nil {
+		return err
+	}
+	err = s.MessageReactionAdd(m.cID, m.mID, "⏩")
 	if err != nil {
 		return err
 	}
@@ -104,6 +121,7 @@ func (m *Menu) render() *DG.MessageEmbed {
 	return embed.NewEmbed().
 		SetTitle(m.title).
 		SetDescription(text).
+		SetThumbnail(m.Images[m.page-1]).
 		SetFooter(fmt.Sprintf("Page %d/%d", m.page, m.maxPage)).
 		SetColor(0x555555).MessageEmbed
 }
@@ -122,6 +140,18 @@ func (m *Menu) NextPage(s *DG.Session) {
 	if m.page > m.maxPage {
 		m.page = m.maxPage
 	}
+	edit := DG.NewMessageEdit(m.cID, m.mID).SetEmbed(m.render())
+	s.ChannelMessageEditComplex(edit)
+}
+
+func (m *Menu) FirstPage(s *DG.Session) {
+	m.page = 1
+	edit := DG.NewMessageEdit(m.cID, m.mID).SetEmbed(m.render())
+	s.ChannelMessageEditComplex(edit)
+}
+
+func (m *Menu) LastPage(s *DG.Session) {
+	m.page = m.maxPage
 	edit := DG.NewMessageEdit(m.cID, m.mID).SetEmbed(m.render())
 	s.ChannelMessageEditComplex(edit)
 }
@@ -169,6 +199,15 @@ func PageReact(b *Bot) func(*DG.Session, *DG.MessageReactionAdd) {
 			menu.NextPage(s)
 			b.Info("next page")
 			s.MessageReactionRemove(channel, mID, "➡️", ra.UserID)
+		}
+		if ra.Emoji.Name == "⏪" {
+			menu.FirstPage(s)
+			b.Info("first page")
+			s.MessageReactionRemove(channel, mID, "⏪", ra.UserID)
+		} else if ra.Emoji.Name == "⏩" {
+			menu.LastPage(s)
+			b.Info("last page")
+			s.MessageReactionRemove(channel, mID, "⏩", ra.UserID)
 		}
 		b.Menus[menu.ID()] = menu
 	}

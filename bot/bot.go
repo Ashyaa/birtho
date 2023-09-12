@@ -3,7 +3,6 @@ package bot
 import (
 	"sort"
 	"strconv"
-	"strings"
 
 	U "github.com/ashyaa/birtho/util"
 	DG "github.com/bwmarrin/discordgo"
@@ -134,13 +133,10 @@ func (b *Bot) AddItems(items []Item) {
 	}
 }
 
-func (b *Bot) SortedItems() (res []Item) {
-	for _, item := range b.Items {
-		res = append(res, item)
-	}
+func (b *Bot) SortedMonsters() (res []Monster) {
+	res = U.ToSlice(b.Monsters)
 	sort.Slice(res, func(i, j int) bool {
-		v := strings.Compare(res[i].ID, res[j].ID)
-		return v < 0
+		return res[i].ID < res[j].ID
 	})
 	return
 }

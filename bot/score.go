@@ -3,9 +3,7 @@ package bot
 import (
 	"fmt"
 	"sort"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	U "github.com/ashyaa/birtho/util"
 )
@@ -198,78 +196,39 @@ func ShowLeaderboard(b *Bot, p CommandParameters) {
 	time.AfterFunc(time.Duration(61)*time.Second, purgeMenus(b))
 }
 
-func wrap(in string, width int) (r1 string, r2 string) {
-	strs := strings.Split(in, " ")
-	r1, r2 = strs[0], ""
-	len := utf8.RuneCountInString
-	curLen := len(r1)
-	for _, s := range strs[1:] {
-		runeCount := len(s)
-		if curLen+runeCount+1 <= width {
-			r1 += " " + s
-			curLen += runeCount + 1
-		} else {
-			if len(r2) > 0 {
-				r2 += " "
-			}
-			r2 += s
-		}
-	}
-	return
-}
-
-const UnknownItem = "???   "
-
 func (b *Bot) getItemList(usr string, serv Server) []string {
 	res := []string{}
 	userItems, ok := serv.Users[usr]
 	if !ok {
 		return res
 	}
-	for _, item := range b.SortedItems() {
-		hasItem := U.Contains(userItems, item.ID)
-		if hasItem {
-			res = append(res, item.Description())
-		} else {
-			res = append(res, UnknownItem)
-		}
-	}
-	return res
+	return userItems
 }
 
-func formatItemList(items []string) []string {
-	lines := [][2]string{}
-	len := utf8.RuneCountInString
-	for idx, item := range items {
-		line := (idx/20)*10 + (idx % 10)
-		column := (idx / 10) % 2
-		if column == 0 {
-			lines = append(lines, [2]string{item, ""})
-		} else {
-			lines[line][1] = item
+func formatItemList(monsters []Monster, playerItems []string) (res []string) {
+	has := U.ToHashMap(playerItems)
+	for _, monster := range monsters {
+		res = append(res, monster.Name, "")
+		for _, item := range monster.Items {
+			_, found := has[item.ID]
+			res = append(res, item.Description(!found))
 		}
-	}
-
-	res := []string{}
-	maxCol1Width := 26
-	col2Pos := maxCol1Width + 4
-	for _, words := range lines {
-		w1_1, w1_2 := wrap(words[0], maxCol1Width)
-		w2_1, w2_2 := wrap(words[1], maxCol1Width)
-		line := w1_1 + padLeft(w2_1, col2Pos-len(w1_1))
-		if len(w1_2) > 0 || len(w2_2) > 0 {
-			line += "\n" + w1_2 + padLeft(w2_2, col2Pos-len(w1_2))
-		}
-		res = append(res, line, "  ")
 	}
 	return res
 }
 
 func ShowScore(b *Bot, p CommandParameters) {
-	itemList := b.getItemList(p.UID, p.S)
 	sb := b.GetUserScoreboard(p.UID, p.S)
-	menu := NewMenu(formatItemList(itemList), 20, p.CID, p.GID)
+	monsters := b.SortedMonsters()
+	images := []string{}
+	for _, m := range monsters {
+		images = append(images, m.URL)
+	}
+	menu := NewMenu(
+		formatItemList(monsters, b.getItemList(p.UID, p.S)),
+		5, p.CID, p.GID)
 	menu.SetTitle(sb.Name + "'s scoreboard")
+	menu.SetImages(images)
 	infos := fmt.Sprintf("Items: `%d/%d`", len(p.S.Users[p.UID]), len(b.Items))
 	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Points: `%d`", sb.Score)
 	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Rank: `%s`", sb.Rank)
@@ -280,5 +239,5 @@ func ShowScore(b *Bot, p CommandParameters) {
 		return
 	}
 	b.Menus[menu.ID()] = menu
-	time.AfterFunc(time.Duration(61)*time.Second, purgeMenus(b))
+	time.AfterFunc(61*time.Second, purgeMenus(b))
 }

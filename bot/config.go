@@ -23,6 +23,8 @@ func (r Range) Belongs(n int) bool {
 	return r.min <= n && n <= r.max
 }
 
+const UnknownItem = "???"
+
 type Item struct {
 	ID     string  `json:"id,omitempty" yaml:"id,omitempty"`
 	Name   string  `json:"name" yaml:"name"`
@@ -31,14 +33,18 @@ type Item struct {
 	Range  Range   `json:"range,omitempty" yaml:"range,omitempty"`
 }
 
-func (i Item) Description() string {
-	rarity := " (*)"
+func (i Item) Description(hidden bool) string {
+	rarity := "🔸"
 	if i.Chance < 20 {
-		rarity = " (⁂)"
+		rarity = "🟧"
 	} else if i.Chance < 50 {
-		rarity = " (⁑)"
+		rarity = "🔶"
 	}
-	return i.Name + rarity
+	name := i.Name
+	if hidden {
+		name = UnknownItem
+	}
+	return rarity + " " + name
 }
 
 type Monster struct {
