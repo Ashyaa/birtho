@@ -38,7 +38,7 @@ func (i Item) Description(hidden bool) string {
 	if i.Chance < 20 {
 		rarity = "🟧"
 	} else if i.Chance < 50 {
-		rarity = "🔶"
+		rarity = "🟠"
 	}
 	name := i.Name
 	if hidden {

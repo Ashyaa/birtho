@@ -20,6 +20,7 @@ type Menu struct {
 	L        []string // List to be displayed in a embed message
 	Images   []string // List of images to be set as thumbnails on each page
 	header   string
+	footer   string
 	expires  time.Time
 	page     int // Current page
 	maxPage  int
@@ -66,6 +67,10 @@ func (m *Menu) SetImages(images []string) {
 
 func (m *Menu) SetHeader(header string) {
 	m.header = header
+}
+
+func (m *Menu) SetFooter(footer string) {
+	m.footer = footer
 }
 
 func (m *Menu) Send(s *DG.Session, i *DG.Interaction) error {
@@ -118,11 +123,15 @@ func (m *Menu) render() *DG.MessageEmbed {
 		data := append([]string{m.header}, m.L[minIndex:maxIndex]...)
 		text += "```\n" + strings.Join(data, "\n") + "\n```"
 	}
+	footer := fmt.Sprintf("Page %d/%d", m.page, m.maxPage)
+	if m.footer != "" {
+		footer = m.footer + "\n" + footer
+	}
 	return embed.NewEmbed().
 		SetTitle(m.title).
 		SetDescription(text).
 		SetThumbnail(m.Images[m.page-1]).
-		SetFooter(fmt.Sprintf("Page %d/%d", m.page, m.maxPage)).
+		SetFooter(footer).
 		SetColor(0x555555).MessageEmbed
 }
 

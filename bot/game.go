@@ -95,12 +95,13 @@ func Spawn(b *Bot, p CommandParameters) {
 		spawn.Expected = "treat"
 	}
 	command := p.S.Prefix + spawn.Expected
+	footer := fmt.Sprintf("Post \"%s\" to get an item!\nArt by %s.", command, monster.Artist)
 
 	msg, err := SendEmbed(b.s, p.I, p.CID, embed.NewEmbed().
 		SetTitle("A visitor has come!").
 		SetDescription(fmt.Sprintf("**%s** appeared! Greet them with `%s`!", monster.Name, command)).
 		SetColor(0x00FF00).
-		SetFooter(fmt.Sprintf("Art by %s.", monster.Artist)).
+		SetFooter(footer).
 		SetImage(monster.URL).MessageEmbed)
 	if err != nil {
 		b.ErrorE(err, "spawn message")
@@ -151,7 +152,7 @@ func Grab(b *Bot, p CommandParameters) {
 		monster := b.Monsters[spawn.ID]
 		item := monster.RandomItem(b.rng, b.Log)
 		text := fmt.Sprintf("As a thank you for your kindness, **%s** gives %s one **%s**",
-			monster.Name, U.BuildUserTag(p.UID), item.Name)
+			monster.Name, U.BuildUserTag(p.UID), item.Description(false))
 		duplicate := U.Contains(p.S.Users[p.UID], item.ID)
 		footer := itemDescription(item, duplicate) + "\n" + fmt.Sprintf("Art by %s.", monster.Artist)
 		b.s.ChannelMessageEditEmbed(channel, spawn.Message, embed.NewEmbed().
@@ -186,11 +187,11 @@ func Grab(b *Bot, p CommandParameters) {
 func itemDescription(item Item, duplicate bool) string {
 	text := ""
 	if item.Chance < 20 {
-		text = "This item is rare. It must be worth a lot."
+		text = "🟧This item is rare. It must be worth a lot."
 	} else if item.Chance < 50 {
-		text = "This item is uncommon. You wonder where they got it..."
+		text = "🟠This item is uncommon. You wonder where they got it..."
 	} else {
-		text = "This item is common. There's nothing special about it."
+		text = "🔸This item is common. There's nothing special about it."
 	}
 	if duplicate {
 		return text + " Sadly, you already had one..."

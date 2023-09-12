@@ -217,6 +217,8 @@ func formatItemList(monsters []Monster, playerItems []string) (res []string) {
 	return res
 }
 
+const hint = "🔸Common\u2060 \u2060 \u2060 \u2060 \u2060 🟠Uncommon\u2060 \u2060 \u2060 \u2060 \u2060 🟧Rare"
+
 func ShowScore(b *Bot, p CommandParameters) {
 	sb := b.GetUserScoreboard(p.UID, p.S)
 	monsters := b.SortedMonsters()
@@ -233,6 +235,7 @@ func ShowScore(b *Bot, p CommandParameters) {
 	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Points: `%d`", sb.Score)
 	infos += "\u2060 \u2060 \u2060 \u2060 \u2060 " + fmt.Sprintf("Rank: `%s`", sb.Rank)
 	menu.SetSubtitle(infos)
+	menu.SetFooter(hint)
 	err := menu.Send(b.s, p.I)
 	if err != nil {
 		b.Error("creating menu: %s", err.Error())
