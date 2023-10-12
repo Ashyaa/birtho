@@ -57,8 +57,15 @@ func (b *Bot) SetupCommands() {
 	buildOptions(b)
 	b.buildInteractionHandlers()
 	b.s.AddHandler(func(s *DG.Session, i *DG.InteractionCreate) {
-		if h, ok := b.InteractionHandlers[i.ApplicationCommandData().Name]; ok {
-			h(s, i)
+		switch i.Type {
+		case DG.InteractionMessageComponent:
+			PageReact(b)(s, i)
+		case DG.InteractionApplicationCommand:
+			if h, ok := b.InteractionHandlers[i.ApplicationCommandData().Name]; ok {
+				h(s, i)
+			}
+		default:
+			b.Warn("interaction of type  %v is currently not supported", i.Type)
 		}
 	})
 	dgCmds, err := b.s.ApplicationCommands(b.UserID, "")
@@ -80,7 +87,6 @@ func (b *Bot) SetupCommands() {
 		}
 		b.Info("command \"%s\" setup", cmd.Name)
 	}
-	b.s.AddHandler(PageReact(b))
 	b.Info("all commands have been setup")
 }
 

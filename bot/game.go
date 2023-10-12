@@ -102,7 +102,9 @@ func Spawn(b *Bot, p CommandParameters) {
 		SetDescription(fmt.Sprintf("**%s** appeared! Greet them with `%s`!", monster.Name, command)).
 		SetColor(0x00FF00).
 		SetFooter(footer).
-		SetImage(monster.URL).MessageEmbed)
+		SetImage(monster.URL).MessageEmbed,
+		nil,
+	)
 	if err != nil {
 		b.ErrorE(err, "spawn message")
 		return
@@ -275,7 +277,7 @@ func Help(b *Bot, p CommandParameters) {
 
 	msg.SetFooter(footer)
 
-	SendEmbed(b.s, p.I, p.CID, msg.MessageEmbed)
+	SendEmbed(b.s, p.I, p.CID, msg.MessageEmbed, nil)
 }
 
 func listChannels(channels []string) string {

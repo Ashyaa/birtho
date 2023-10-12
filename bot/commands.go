@@ -71,14 +71,15 @@ func SendText(s *DG.Session, i *DG.Interaction, channelID, content string) (*DG.
 	return s.InteractionResponse(i)
 }
 
-func SendEmbed(s *DG.Session, i *DG.Interaction, channelID string, embed *DG.MessageEmbed) (*DG.Message, error) {
+func SendEmbed(s *DG.Session, i *DG.Interaction, channelID string, embed *DG.MessageEmbed, components []DG.MessageComponent) (*DG.Message, error) {
 	if i == nil {
 		return s.ChannelMessageSendEmbed(channelID, embed)
 	}
 	err := s.InteractionRespond(i, &DG.InteractionResponse{
 		Type: DG.InteractionResponseChannelMessageWithSource,
 		Data: &DG.InteractionResponseData{
-			Embeds: []*DG.MessageEmbed{embed},
+			Embeds:     []*DG.MessageEmbed{embed},
+			Components: components,
 		},
 	})
 	if err != nil {

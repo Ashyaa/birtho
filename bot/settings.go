@@ -114,5 +114,5 @@ func Info(b *Bot, p CommandParameters) {
 		channels = strings.Join(channelTags, ", ")
 	}
 	msg.AddField("Channels", channels)
-	SendEmbed(b.s, p.I, p.CID, msg.MessageEmbed)
+	SendEmbed(b.s, p.I, p.CID, msg.MessageEmbed, nil)
 }

@@ -9,6 +9,13 @@ import (
 	embed "github.com/clinet/discordgo-embed"
 )
 
+const (
+	FirstPageLabel    = "First page"
+	PreviousPageLabel = "⯇"
+	NextPageLabel     = "⯈"
+	LastPageLabel     = "Last page"
+)
+
 type Listable interface {
 	string
 }
@@ -73,29 +80,39 @@ func (m *Menu) SetFooter(footer string) {
 	m.footer = footer
 }
 
+func (m *Menu) GetComponents() []DG.MessageComponent {
+	return []DG.MessageComponent{
+		DG.ActionsRow{
+			Components: []DG.MessageComponent{
+				DG.Button{
+					Label:    FirstPageLabel,
+					CustomID: FirstPageLabel,
+					Disabled: m.page == 1,
+				},
+				DG.Button{
+					Label:    PreviousPageLabel,
+					CustomID: PreviousPageLabel,
+					Disabled: m.page == 1,
+				},
+				DG.Button{
+					Label:    NextPageLabel,
+					CustomID: NextPageLabel,
+					Disabled: m.page == m.maxPage,
+				},
+				DG.Button{
+					Label:    LastPageLabel,
+					CustomID: LastPageLabel,
+					Disabled: m.page == m.maxPage,
+				},
+			},
+		},
+	}
+}
+
 func (m *Menu) Send(s *DG.Session, i *DG.Interaction) error {
-	msg, err := SendEmbed(s, i, m.cID, m.render())
-	if err != nil {
-		return err
-	}
+	msg, err := SendEmbed(s, i, m.cID, m.render(), m.GetComponents())
 	m.mID = msg.ID
-	err = s.MessageReactionAdd(m.cID, m.mID, "⏪")
-	if err != nil {
-		return err
-	}
-	err = s.MessageReactionAdd(m.cID, m.mID, "⬅️")
-	if err != nil {
-		return err
-	}
-	err = s.MessageReactionAdd(m.cID, m.mID, "➡️")
-	if err != nil {
-		return err
-	}
-	err = s.MessageReactionAdd(m.cID, m.mID, "⏩")
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func id(mID, cID, gID string) string {
@@ -141,6 +158,7 @@ func (m *Menu) PreviousPage(s *DG.Session) {
 		m.page = 1
 	}
 	edit := DG.NewMessageEdit(m.cID, m.mID).SetEmbed(m.render())
+	edit.Components = m.GetComponents()
 	s.ChannelMessageEditComplex(edit)
 }
 
@@ -150,18 +168,21 @@ func (m *Menu) NextPage(s *DG.Session) {
 		m.page = m.maxPage
 	}
 	edit := DG.NewMessageEdit(m.cID, m.mID).SetEmbed(m.render())
+	edit.Components = m.GetComponents()
 	s.ChannelMessageEditComplex(edit)
 }
 
 func (m *Menu) FirstPage(s *DG.Session) {
 	m.page = 1
 	edit := DG.NewMessageEdit(m.cID, m.mID).SetEmbed(m.render())
+	edit.Components = m.GetComponents()
 	s.ChannelMessageEditComplex(edit)
 }
 
 func (m *Menu) LastPage(s *DG.Session) {
 	m.page = m.maxPage
 	edit := DG.NewMessageEdit(m.cID, m.mID).SetEmbed(m.render())
+	edit.Components = m.GetComponents()
 	s.ChannelMessageEditComplex(edit)
 }
 
@@ -175,8 +196,14 @@ func purgeMenus(b *Bot) func() {
 			}
 		}
 		for _, ID := range toRemove {
-			if _, ok := b.Menus[ID]; ok {
-				b.s.MessageReactionsRemoveAll(b.Menus[ID].cID, b.Menus[ID].mID)
+			if m, ok := b.Menus[ID]; ok {
+				msg, err := b.s.ChannelMessage(b.Menus[ID].cID, b.Menus[ID].mID)
+				if err != nil || len(msg.Embeds) == 0 {
+					return
+				}
+				edit := DG.NewMessageEdit(m.cID, m.mID).SetEmbed(m.render())
+				edit.Components = []DG.MessageComponent{}
+				b.s.ChannelMessageEditComplex(edit)
 				delete(b.Menus, ID)
 			}
 		}
@@ -184,40 +211,42 @@ func purgeMenus(b *Bot) func() {
 	}
 }
 
-func PageReact(b *Bot) func(*DG.Session, *DG.MessageReactionAdd) {
-	return func(s *DG.Session, ra *DG.MessageReactionAdd) {
-		if ra.UserID == b.UserID {
+func PageReact(b *Bot) func(*DG.Session, *DG.InteractionCreate) {
+	return func(s *DG.Session, i *DG.InteractionCreate) {
+		channel := i.ChannelID
+		if i.Message == nil {
+			b.Error("page interaction does not come from a button")
+			s.InteractionRespond(i.Interaction, &DG.InteractionResponse{
+				Type: DG.InteractionResponseUpdateMessage,
+			})
 			return
 		}
-		channel := ra.ChannelID
-		mID := ra.MessageID
+		mID := i.Message.ID
 
-		menu, ok := b.Menus[id(mID, channel, ra.GuildID)]
+		menu, ok := b.Menus[id(mID, channel, i.GuildID)]
 		if !ok {
+			b.Info("nok")
 			return
 		}
-		if menu.mID != mID || menu.cID != channel || menu.gID != ra.GuildID {
+		if menu.mID != mID || menu.cID != channel || menu.gID != i.GuildID {
+			b.Info("incorrect")
 			return
 		}
-
-		if ra.Emoji.Name == "⬅️" {
-			menu.PreviousPage(s)
-			b.Info("previous page")
-			s.MessageReactionRemove(channel, mID, "⬅️", ra.UserID)
-		} else if ra.Emoji.Name == "➡️" {
-			menu.NextPage(s)
-			b.Info("next page")
-			s.MessageReactionRemove(channel, mID, "➡️", ra.UserID)
-		}
-		if ra.Emoji.Name == "⏪" {
+		switch name := i.MessageComponentData().CustomID; name {
+		case FirstPageLabel:
 			menu.FirstPage(s)
-			b.Info("first page")
-			s.MessageReactionRemove(channel, mID, "⏪", ra.UserID)
-		} else if ra.Emoji.Name == "⏩" {
+		case PreviousPageLabel:
+			menu.PreviousPage(s)
+		case NextPageLabel:
+			menu.NextPage(s)
+		case LastPageLabel:
 			menu.LastPage(s)
-			b.Info("last page")
-			s.MessageReactionRemove(channel, mID, "⏩", ra.UserID)
+		default:
+			b.Warn("unknown button %s", name)
 		}
 		b.Menus[menu.ID()] = menu
+		s.InteractionRespond(i.Interaction, &DG.InteractionResponse{
+			Type: DG.InteractionResponseUpdateMessage,
+		})
 	}
 }
