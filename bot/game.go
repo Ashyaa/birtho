@@ -259,7 +259,7 @@ const (
 	scoring = "See your score, rank in the leaderboard and current list of items with the `%sscore` command, or the `/score` slash command!\n" +
 		"See the server leaderboard with the `%sleaderboard` command, or the `/leaderboard` slash command!"
 	help   = "You can display this help message at any time wit the `%shelp` command, or the `/help` slash command."
-	footer = "Developped by Ashyaa. Art by AcidFiend,  BirthofVns, Ella, N1MH and Talondal."
+	footer = "Developed by Ashyaa. Art by AcidFiend,  BirthofVns, Ella, N1MH and Talondal."
 )
 
 func Help(b *Bot, p CommandParameters) {
