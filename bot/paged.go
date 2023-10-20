@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	FirstPageLabel    = "First page"
-	PreviousPageLabel = "⯇"
-	NextPageLabel     = "⯈"
-	LastPageLabel     = "Last page"
+	FirstPageLabel    = "\u2060 \u2060 \u2060 First \u2060 \u2060 \u2060"
+	PreviousPageLabel = "Previous"
+	NextPageLabel     = "\u2060 \u2060 \u2060 Next \u2060 \u2060 \u2060"
+	LastPageLabel     = "\u2060 \u2060 \u2060 Last \u2060 \u2060 \u2060"
 )
 
 type Listable interface {
