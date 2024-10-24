@@ -80,8 +80,8 @@ func (m *Menu) SetFooter(footer string) {
 	m.footer = footer
 }
 
-func (m *Menu) GetComponents() []DG.MessageComponent {
-	return []DG.MessageComponent{
+func (m *Menu) GetComponents() *[]DG.MessageComponent {
+	return &[]DG.MessageComponent{
 		DG.ActionsRow{
 			Components: []DG.MessageComponent{
 				DG.Button{
@@ -110,8 +110,10 @@ func (m *Menu) GetComponents() []DG.MessageComponent {
 }
 
 func (m *Menu) Send(s *DG.Session, i *DG.Interaction) error {
-	msg, err := SendEmbed(s, i, m.cID, m.render(), m.GetComponents())
-	m.mID = msg.ID
+	msg, err := SendEmbed(s, i, m.cID, m.render(), *m.GetComponents())
+	if err == nil {
+		m.mID = msg.ID
+	}
 	return err
 }
 
@@ -202,7 +204,7 @@ func purgeMenus(b *Bot) func() {
 					return
 				}
 				edit := DG.NewMessageEdit(m.cID, m.mID).SetEmbed(m.render())
-				edit.Components = []DG.MessageComponent{}
+				edit.Components = &[]DG.MessageComponent{}
 				b.s.ChannelMessageEditComplex(edit)
 				delete(b.Menus, ID)
 			}
