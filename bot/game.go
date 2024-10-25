@@ -70,7 +70,8 @@ func Spawn(b *Bot, p CommandParameters) {
 			return
 		}
 		if !p.S.G.Spawns(b.rng) {
-			p.S.G.IncreaseSpawnRate(b.rng, p.MsgCreate.Message)
+			p.S.G.UpdateSpawnRate(b.rng, p.MsgCreate.Message)
+			b.Info("new spawn rate: %d%%", p.S.G.SpawnRate)
 			b.SaveServer(p.S)
 			return
 		}

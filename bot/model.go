@@ -47,7 +47,7 @@ func (g *Game) Spawns(rng U.RNG) bool {
 	return rng.PercentChance(g.SpawnRate)
 }
 
-func (g *Game) IncreaseSpawnRate(rng U.RNG, msg *DG.Message) {
+func (g *Game) UpdateSpawnRate(rng U.RNG, msg *DG.Message) {
 	g.LastMessages = g.LastMessages.Update(msg)
 	span := g.LastMessages.Span()
 	if span > time.Hour {
