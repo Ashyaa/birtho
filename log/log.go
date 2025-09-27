@@ -11,10 +11,17 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func New() LR.Logger {
-	res := *LR.New()
-	res.SetOutput(colorable.NewColorableStdout())
-	res.SetFormatter(&LR.TextFormatter{ForceColors: true, FullTimestamp: true})
+const (
+	logfile = "bot.log"
+)
+
+func New() *LR.Logger {
+	res := LR.New()
+	res.SetFormatter(&LR.TextFormatter{
+		ForceColors:     true,
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
 	exePath, err := os.Executable()
 	if err != nil {
 		res.Fatal(err.Error())
@@ -28,11 +35,12 @@ func New() LR.Logger {
 		res.Fatalf("%s exists but is not a directory", logDir)
 	}
 	mw := io.MultiWriter(&lumberjack.Logger{
-		Filename:   FP.Join(logDir, "bot.log"),
+		Filename:   FP.Join(logDir, logfile),
 		MaxSize:    500, // megabytes
 		MaxBackups: 3,
 		MaxAge:     28, //days
 	}, colorable.NewColorableStdout())
+
 	res.SetOutput(mw)
 	return res
 }
